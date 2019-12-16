@@ -54,6 +54,10 @@ module vyatta-op-show-system-image-v1 {
 
 		Defines the top level 'image' level under 'show system' for operational CLI";
 
+	revision 2019-12-18 {
+		description "Adds packages node to print all installed packaged
+			in a given image.";
+	}
 	revision 2019-02-15 {
 		description "Initial version";
 	}
@@ -70,6 +74,18 @@ module vyatta-op-show-system-image-v1 {
 			opd:command version {
 				opd:help "Show installed Vyatta images with Vyatta version number";
 				opd:on-enter 'vyatta-image-op --action=show-versions';
+			}
+			opd:argument image {
+				opd:help "Name of an installed image";
+				opd:allowed 'vyatta-image-op --action=list-images';
+				opd:privileged true;
+				type string;
+			
+				opd:command packages {
+					opd:help "Print installed packages of selected image";
+					opd:on-enter 'vyatta-squashfs-chroot "$4" LIST';
+					opd:privileged true;
+				}
 			}
 		}
 	}

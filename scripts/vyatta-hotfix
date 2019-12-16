@@ -1,0 +1,104 @@
+#!/usr/bin/perl
+
+# SPDX-License-Identifier: GPL-2.0-only
+
+# **** License ****
+#
+# Copyright (c) 2019, AT&T Intellectual Property.
+# All Rights Reserved.
+#
+# **** End License ****
+use strict;
+use warnings;
+
+use Sys::Syslog;
+use File::Basename;
+
+use lib "/opt/vyatta/share/perl5/";
+use Vyatta::Configd;
+use Vyatta::Live;
+
+exit 1 unless defined $ARGV[0];
+croak "Argument contains unsanitary characters, stopped"
+  if ( $ARGV[0] =~ m|[^-A-Za-z0-9_/.~]| );
+my $target_image = "$ARGV[0]";
+
+my $client = Vyatta::Configd::Client->new();
+exit 1 unless defined $client;
+
+my $tree = $client->tree_get_full_hash("system-image");
+exit 1 unless defined $tree->{'system-image'}->{'installed-images'};
+exit 1 unless defined $tree->{'system-image'}->{'running-image'};
+
+my $running_image = $tree->{'system-image'}->{'running-image'};
+if ($running_image eq $target_image) {
+	print "Cannot install packages to current image!\n";
+	exit 1;
+}
+
+my $images = $tree->{'system-image'}->{'installed-images'};
+my $clone  = "${target_image}-backup";
+
+# Lookup target image
+my $found = 0;
+foreach my $image ( @{$images} ) {
+    if ( $image->{'name'} eq $target_image ) {
+        $found = 1;
+    }
+}
+if ( $found == 0 ) {
+    print "Selected image $target_image, does not exist\n";
+    exit 1;
+}
+
+my @pkgs = @ARGV[ 2 .. $#ARGV ];
+if ( scalar @pkgs == 0 ) {
+    exit 1;
+}
+for ( my $i = 0 ; $i < scalar @pkgs ; $i++ ) {
+    my $path = $pkgs[$i];
+    my $file = basename($path);
+    unless ( $file =~ m/^[A-Za-z0-9\.\-\_\+\/]+$/ ) {
+        print "Invalid package name: [$file]\n";
+        exit 1;
+    }
+    unless ( -f $path ) {
+        print "Selected file does not exist: $path\n";
+        exit 1;
+    }
+    unless ( $file =~ m/\.deb$/ ) {
+        print "Selected file is not a debian package: $path\n";
+    }
+}
+
+$ENV{'VYATTA_NEW_PKGS'} = join " ", @pkgs;
+if ( scalar @pkgs > 1 ) {
+    print "Installing " . scalar @pkgs . " new packages\n";
+} else {
+    print "Installing 1 new package\n";
+}
+
+print "Packages: $ENV{'VYATTA_NEW_PKGS'}\n";
+
+# Create backup of target image
+syslog( 'info', "Creating clone ($clone) of target image to perform package upgrade on..." );
+system("clone-image.pl --old_name \"$target_image\" --new_name \"$clone\"");
+
+# Install new packages
+syslog( 'info', "Installing new packages to target image [$target_image]" );
+syslog( 'info', "Packages: $ENV{'VYATTA_NEW_PKGS'}" );
+print `vyatta-squashfs-chroot $clone INSTALL`;
+if ( $? != 0 ) {
+    syslog( 'err', "Failed to install new packages. Removing cloned image ($clone)" );
+    print "Failed to install new packages to target image: [$target_image].\n";
+    delete_image($clone);
+    exit 1;
+} else {
+    syslog( 'info', "Package install successful. Replacing cloned image ($clone) with target ($target_image)" );
+    delete_image($target_image);
+    system("rename-image.pl --old_name $clone --new_name $target_image");
+    syslog( 'info',
+        "Successfully installed new packages to target image: [$target_image]."
+    );
+    print "Success.\n";
+}

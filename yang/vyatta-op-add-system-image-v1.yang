@@ -53,7 +53,11 @@ module vyatta-op-add-system-image-v1 {
 		SPDX-License-Identifier: BSD-3-Clause
 
 		Defines the top level 'image' level under 'add system' for operational CLI";
-
+	
+	revision 2019-12-16 {
+		description "Adding ability to install specific packages to a target image via the
+			packages option.";
+	}
 	revision 2019-02-15 {
 		description "Initial version";
 	}
@@ -64,7 +68,7 @@ module vyatta-op-add-system-image-v1 {
 
 			opd:argument image-url {
 				opd:help "File name or URL of system image file to be installed";
-				opd:allowed 'echo -en "<ISO_URL>\n<ISO_file>"';
+				opd:allowed 'echo -e "<ISO_URL>\n<ISO_file>" && vyatta-image-op --action=list-images';
 				opd:on-enter 'vyatta-install-image "$4"';
 				opd:privileged true;
 				type string;
@@ -87,6 +91,19 @@ module vyatta-op-add-system-image-v1 {
 								type string;
 							}
 						}
+					}
+				}
+				opd:command packages {
+					opd:help "Install selected list of packages";
+					opd:repeatable true;
+					opd:inherit "" {
+						opd:on-enter 'vyatta-hotfix "$4" "${@:5}"';
+						opd:privileged true;
+					}
+
+					opd:argument package-list {
+						opd:help "Space separated list of packages";
+						type string;
 					}
 				}
 				opd:argument auto-install {

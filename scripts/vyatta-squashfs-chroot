@@ -1,0 +1,144 @@
+#!/bin/bash
+
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (c) 2019, AT&T Intellectual Property.
+# All Rights Reserved.
+
+# Running version of Vyatta
+: ${vyatta_prefix:=/opt/vyatta}
+: ${vyatta_exec_prefix:=$vyatta_prefix}
+: ${vyatta_bindir:=${vyatta_exec_prefix}/bin}
+: ${vyatta_sbindir:=${vyatta_exec_prefix}/sbin}
+export PATH="$PATH:${vyatta_sbindir}:${vyatta_bindir}"
+
+source ${vyatta_sbindir}/vyatta-install-image.functions
+source ${vyatta_sbindir}/vyatta-live-image.functions
+
+# Additonal debug logging
+export INSTALL_LOG=/var/log/vyatta/squash-chroot.log
+
+safe_umount ()
+{
+	umount $merged/dev/pts &>/dev/null
+	umount $merged &>/dev/null
+	umount $lower_dir &>/dev/null
+	rmdir $merged &>/dev/null
+	rmdir $lower_dir &>/dev/null
+	unset merged &>/dev/null
+	unset lower_dir &>/dev/null
+}
+
+TARGET_IMAGE=${1//[^a-zA-Z0-9_-]/}
+if [[ -z $TARGET_IMAGE ]]; then
+	fail_exit "No target image provided"
+fi
+
+# COMMANDS:
+#   INSTALL
+#   LIST
+COMMAND=${2//[^a-zA-Z0-9]/}
+if [[ -z $COMMAND ]]; then
+	fail_exit "No command provided"
+fi
+
+ROOTFS_DEV=$(what_is_mounted_on /boot)
+if [[ -z $ROOTFS_DEV ]]; then
+	logger error "$0: Failed to get root device for $TARGET_IMAGE"
+	fail_exit "Failed to get root device for $TARGET_IMAGE"
+fi
+
+#
+# Setup Overlay
+squashfs=/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/${TARGET_IMAGE}.squashfs
+if [[ ! -f $squashfs ]]; then
+	base="/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/"
+	curr=$(pwd)
+	cd $base
+	eval squashfs=*.squashfs
+	squashfs=${base}${squashfs}
+	cd $curr
+fi
+
+export merged=/mnt/merged
+export lower_dir=/mnt/squash
+upper_dir=/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/persistence/rw
+work_dir=/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/persistence/work
+
+mkdir -p $lower_dir
+mkdir -p $merged
+
+if ! try_mount $squashfs $lower_dir; then
+	safe_umount
+	logger error "$0: Failed to mount target squashfs"
+	fail_exit "Failed to mount target squashfs"
+fi
+
+margs="-t overlay -o noatime,upperdir=${upper_dir},lowerdir=${lower_dir},workdir=${work_dir} overlay $merged"
+if ! try_mount $margs; then
+	safe_umount
+	logger error "$0: Cannot mount overlay"
+	fail_exit "Cannot mount overlay"
+fi
+
+if [[ $COMMAND == "LIST" ]]; then
+	run_command dpkg --list --root=${merged}
+	ret=$?
+elif [[ $COMMAND == "INSTALL" ]]; then
+	if [[ -z $VYATTA_NEW_PKGS ]]; then
+		safe_umount
+		logger error "$0: No packages specified for install"
+		fail_exit "No packages specified for install"
+	fi
+
+	for pkg in $VYATTA_NEW_PKGS; do
+		if [[ ! -f $pkg ]]; then
+			safe_umount
+			logger error "$0: Package not found: $pkg"
+			fail_exit "Package not found: $pkg"
+		fi
+	done
+
+	if ! try_mount --bind /dev/pts ${merged}/dev/pts; then
+		fail_exit "Failed to setup chroot"
+	fi
+
+	# Set up repo
+	TEMP_APT_REPO_DIR=/var/UPSTREAM
+	mkdir -p ${merged}${TEMP_APT_REPO_DIR}
+	cp $VYATTA_NEW_PKGS ${merged}${TEMP_APT_REPO_DIR}/
+	pushd ${merged}${TEMP_APT_REPO_DIR}/
+	dpkg-scanpackages ./ 2>/dev/null > ./Packages
+	if [[ $? != 0 ]]; then
+		safe_umount
+		logger error "$0: Failed to scan packages"
+		fail_exit "Failed to scan packages"
+	fi
+	popd
+	run_command cat > ${merged}/etc/apt/sources.list.d/hotfix.list << EOF
+deb file:${TEMP_APT_REPO_DIR} ./
+EOF
+	# Run apt-get upgrade
+	APT_ARGS="--allow-downgrades --allow-remove-essential --allow-change-held-packages"
+	run_command chroot ${merged} logrotate -f /etc/logrotate.d/apt
+	export DEBIAN_FRONTEND=noninteractive 
+	run_command chroot ${merged} apt-get update
+	run_command chroot ${merged} apt-get $APT_ARGS --yes --dry-run dist-upgrade
+	if [[ $? != 0 ]]; then
+		safe_umount
+		logger error "$0: Apt-get dry run failed"
+		fail_exit "Apt-get dry run failed"
+	fi
+	run_command chroot ${merged} apt-get $APT_ARGS --yes dist-upgrade
+	if [[ $? != 0 ]]; then
+		safe_umount
+		logger error "$0: Apt-get dry run failed"
+		fail_exit "Apt-get dry run failed"
+	fi
+	run_command chroot ${merged} apt-get clean
+else
+	safe_umount
+	fail_exit "Command [$COMMAND] not supported"
+fi
+
+safe_umount
+exit $ret

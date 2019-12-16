@@ -25,6 +25,7 @@ Depends:
  cpio,
  curl,
  dmidecode,
+ dpkg-dev,
  dosfstools,
  efibootmgr,
  file,
