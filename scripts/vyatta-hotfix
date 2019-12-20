@@ -19,7 +19,7 @@ use Vyatta::Configd;
 use Vyatta::Live;
 
 exit 1 unless defined $ARGV[0];
-croak "Argument contains unsanitary characters, stopped"
+die "Argument contains unsanitary characters, stopped"
   if ( $ARGV[0] =~ m|[^-A-Za-z0-9_/.~]| );
 my $target_image = "$ARGV[0]";
 
