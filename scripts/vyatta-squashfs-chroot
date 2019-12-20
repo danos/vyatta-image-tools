@@ -131,9 +131,11 @@ EOF
 	run_command chroot ${merged} apt-get $APT_ARGS --yes dist-upgrade
 	if [[ $? != 0 ]]; then
 		safe_umount
-		logger error "$0: Apt-get dry run failed"
-		fail_exit "Apt-get dry run failed"
+		logger error "$0: Apt-get upgrade failed"
+		fail_exit "Apt-get upgrade failed"
 	fi
+	run_command rm -rf ${merged}/${TEMP_APT_REPO_DIR}
+	run_command rm -rf ${merged}/etc/apt/sources.list.d/hotfix.list
 	run_command chroot ${merged} apt-get clean
 else
 	safe_umount
