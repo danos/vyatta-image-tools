@@ -113,15 +113,15 @@ elif [[ $COMMAND == "INSTALL" ]]; then
 	# Set up repo
 	TEMP_APT_REPO_DIR=/var/UPSTREAM
 	mkdir -p ${merged}${TEMP_APT_REPO_DIR}
-	cp $VYATTA_NEW_PKGS ${merged}${TEMP_APT_REPO_DIR}/
-	pushd ${merged}${TEMP_APT_REPO_DIR}/
-	dpkg-scanpackages ./ 2>/dev/null > ./Packages
+	run_command cp $VYATTA_NEW_PKGS ${merged}${TEMP_APT_REPO_DIR}/
+	pushd ${merged}${TEMP_APT_REPO_DIR}/ &>/dev/null
+	run_command dpkg-scanpackages ./ 2>/dev/null > ./Packages
 	if [[ $? != 0 ]]; then
 		safe_umount
 		logger error "$0: Failed to scan packages"
 		fail_exit "Failed to scan packages"
 	fi
-	popd
+	popd &>/dev/null
 	run_command cat > ${merged}/etc/apt/sources.list.d/hotfix.list << EOF
 deb file:${TEMP_APT_REPO_DIR} ./
 EOF
