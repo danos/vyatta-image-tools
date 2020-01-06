@@ -90,7 +90,8 @@ syslog( 'info', "Packages: $ENV{'VYATTA_NEW_PKGS'}" );
 print `vyatta-squashfs-chroot $clone INSTALL`;
 if ( $? != 0 ) {
     syslog( 'err', "Failed to install new packages. Removing cloned image ($clone)" );
-    print "Failed to install new packages to target image: [$target_image].\n";
+    print "Failed to install new packages to target image: $target_image.\n";
+    print "The original target image was left untouched.\n";
     delete_image($clone);
     exit 1;
 } else {
