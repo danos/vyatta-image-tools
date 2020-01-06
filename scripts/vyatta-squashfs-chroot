@@ -19,7 +19,9 @@ export INSTALL_LOG=/var/log/vyatta/squash-chroot.log
 
 safe_umount ()
 {
+	umount $merged/proc &>/dev/null
 	umount $merged/dev/pts &>/dev/null
+	umount $merged/dev &>/dev/null
 	umount $merged &>/dev/null
 	umount $lower_dir &>/dev/null
 	rmdir $merged &>/dev/null
@@ -98,7 +100,13 @@ elif [[ $COMMAND == "INSTALL" ]]; then
 		fi
 	done
 
+	if ! try_mount --bind /dev ${merged}/dev; then
+		fail_exit "Failed to setup chroot"
+	fi
 	if ! try_mount --bind /dev/pts ${merged}/dev/pts; then
+		fail_exit "Failed to setup chroot"
+	fi
+	if ! try_mount --bind /proc ${merged}/proc; then
 		fail_exit "Failed to setup chroot"
 	fi
 
