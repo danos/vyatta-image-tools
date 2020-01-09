@@ -1,3 +1,17 @@
+vyatta-image-tools (5.22) unstable; urgency=medium
+
+  * Vyatta-HOTFIX
+  * Don't use croak & releax regex
+  * HOTFIX: Remove temporary apt repo after upgrade
+  * HOTFIX: Mount /proc in chroot as well
+  * HOTFIX: Use approp. v-i-t wrappers & hide dir changes
+  * HOTFIX: Safely run apt-get
+  * HOTFIX: Add install failure output messages.
+  * HOTFIX: Handle unsafe exits
+  * HOTFIX: Missing semicolon
+
+ -- Erik Ziegenbalg <Erik.Ziegenbalg@vyatta.att-mail.com>  Thu, 09 Jan 2020 15:02:48 -0800
+
 vyatta-image-tools (5.21) unstable; urgency=medium
 
   * DANOS Import master
