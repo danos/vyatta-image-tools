@@ -29,7 +29,7 @@ safe_umount ()
 	unset merged &>/dev/null
 	unset lower_dir &>/dev/null
 }
-trap "{ safe_umount }" EXIT HUP KILL
+trap "{ safe_umount; }" EXIT HUP KILL
 
 TARGET_IMAGE=${1//[^a-zA-Z0-9\_\.\-]/}
 if [[ -z $TARGET_IMAGE ]]; then
