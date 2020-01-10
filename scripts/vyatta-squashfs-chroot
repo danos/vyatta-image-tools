@@ -126,9 +126,15 @@ elif [[ $COMMAND == "INSTALL" ]]; then
 		fail_exit "Failed to scan packages"
 	fi
 	popd &>/dev/null
+
+	# Create and clear apt sources just in case there are lingering build
+	# time sources.
+	mkdir -p ${merged}/etc/apt/sources.list.d
+	echo > ${merged}/etc/apt/sources.lsit
 	cat > ${merged}/etc/apt/sources.list.d/hotfix.list << EOF
 deb file:${TEMP_APT_REPO_DIR} ./
 EOF
+
 	# Run apt-get upgrade
 	APT_ARGS="--allow-downgrades --allow-remove-essential --allow-change-held-packages"
 	run_command chroot ${merged} /bin/bash -c \
