@@ -31,6 +31,40 @@ safe_umount ()
 }
 trap "{ safe_umount; }" EXIT HUP KILL
 
+apt_command ()
+{
+	aptcmd=${1:?Missing Command}
+	chroot ${merged} rm stdout stderr &>/dev/null
+	if ! run_command chroot ${merged} /bin/bash -c \
+		"DEBIAN_FRONTEND=noninteractive ${aptcmd} >stdout 2>stderr"; then
+		echo "Fatal error detected running apt-get update!"
+		return 1
+	fi
+
+	if grep -q '^[E]:' "${merged}/stderr"; then
+		echo "Apt-get failed."
+		cat "${merged}/stderr"
+		return 1
+	fi
+	
+	# Apt-get was successful at this point, but may have run into dependency
+	# issues. Print stdout regardless.
+	cat ${merged}/stdout
+
+	if grep -q '^[W]:' "${merged}/stderr"; then
+		echo "Apt-get succeeded but with warnings."
+		cat "${merged}/stderr"
+	fi
+
+	if grep -q '[1-9]\d* not upgraded' "${merged}/stdout"; then
+		echo "Apt-get failed to install some packages"
+		return 1
+	fi
+
+	return 0
+}
+
+
 TARGET_IMAGE=${1//[^a-zA-Z0-9\_\.\-]/}
 if [[ -z $TARGET_IMAGE ]]; then
 	fail_exit "No target image provided"
@@ -126,38 +160,40 @@ elif [[ $COMMAND == "INSTALL" ]]; then
 		fail_exit "Failed to scan packages"
 	fi
 	popd &>/dev/null
+	chown -R _apt:root ${merged}${TEMP_APT_REPO_DIR}
+	chmod -R 700 ${merged}${TEMP_APT_REPO_DIR}
 
 	# Create and clear apt sources just in case there are lingering build
 	# time sources.
 	mkdir -p ${merged}/etc/apt/sources.list.d
-	echo > ${merged}/etc/apt/sources.lsit
+	echo > ${merged}/etc/apt/sources.list
+
+
 	cat > ${merged}/etc/apt/sources.list.d/hotfix.list << EOF
 deb file:${TEMP_APT_REPO_DIR} ./
 EOF
 
 	# Run apt-get upgrade
 	APT_ARGS="--allow-downgrades --allow-remove-essential --allow-change-held-packages"
-	run_command chroot ${merged} /bin/bash -c \
-		"DEBIAN_FRONTEND=noninteractive apt-get update"
+	apt_command "apt-get update"
 	if [[ $? != 0 ]]; then
 		safe_umount
 		logger error "$0: Apt-get update failed"
 		fail_exit "Apt-get update failed"
 	fi
-	run_command chroot ${merged} /bin/bash -c \
-		"DEBIAN_FRONTEND=noninteractive apt-get $APT_ARGS --yes --dry-run dist-upgrade"
+	apt_command "apt-get $APT_ARGS --yes --dry-run dist-upgrade"
 	if [[ $? != 0 ]]; then
 		safe_umount
 		logger error "$0: Apt-get dry run failed"
 		fail_exit "Apt-get dry run failed"
 	fi
-	run_command chroot ${merged} /bin/bash -c \
-		"DEBIAN_FRONTEND=noninteractive apt-get $APT_ARGS --yes dist-upgrade"
+	apt_command "apt-get $APT_ARGS --yes dist-upgrade"
 	if [[ $? != 0 ]]; then
 		safe_umount
 		logger error "$0: Apt-get upgrade failed"
 		fail_exit "Apt-get upgrade failed"
 	fi
+	run_command chroot ${merged} rm stderr stdout
 	run_command rm -rf ${merged}/${TEMP_APT_REPO_DIR}
 	run_command rm -rf ${merged}/etc/apt/sources.list.d/hotfix.list
 	run_command chroot ${merged} /bin/bash -c \
