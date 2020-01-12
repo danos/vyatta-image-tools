@@ -181,7 +181,7 @@ EOF
 		logger error "$0: Apt-get update failed"
 		fail_exit "Apt-get update failed"
 	fi
-	apt_command "apt-get $APT_ARGS --yes --dry-run dist-upgrade"
+	apt_command "apt-get $APT_ARGS --yes --dry-run upgrade"
 	if [[ $? != 0 ]]; then
 		safe_umount
 		logger error "$0: Apt-get dry run failed"
