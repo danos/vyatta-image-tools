@@ -88,7 +88,8 @@ system("clone-image.pl --old_name \"$target_image\" --new_name \"$clone\"");
 syslog( 'info', "Installing new packages to target image [$target_image]" );
 syslog( 'info', "Packages: $ENV{'VYATTA_NEW_PKGS'}" );
 print `vyatta-squashfs-chroot $clone INSTALL`;
-if ( $? != 0 ) {
+my $ret = $? >> 8;
+if ( $ret != 0 ) {
     syslog( 'err', "Failed to install new packages. Removing cloned image ($clone)" );
     print "Failed to install new packages to target image: $target_image.\n";
     print "The original target image was left untouched.\n";
@@ -97,9 +98,9 @@ if ( $? != 0 ) {
 } else {
     syslog( 'info', "Package install successful. Replacing cloned image ($clone) with target ($target_image)" );
     delete_image($target_image);
-    system("rename-image.pl --old_name $clone --new_name $target_image");
+    system("rename-image.pl --old_name $clone --new_name $target_image &>/dev/null");
     syslog( 'info',
         "Successfully installed new packages to target image: [$target_image]."
     );
-    print "Success.\n";
+    print "Done.\n";
 }
