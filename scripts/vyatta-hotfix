@@ -37,7 +37,7 @@ if ($running_image eq $target_image) {
 }
 
 my $images = $tree->{'system-image'}->{'installed-images'};
-my $clone  = "${target_image}-backup";
+my $clone  = "${target_image}." . rand();
 
 # Lookup target image
 my $found = 0;
@@ -88,12 +88,19 @@ print "Packages: $ENV{'VYATTA_NEW_PKGS'}\n";
 # Create backup of target image
 syslog( 'info', "Creating clone ($clone) of target image to perform package upgrade on..." );
 system("clone-image.pl --old_name \"$target_image\" --new_name \"$clone\"");
+my $ret = $? >> 8;
+if ( $ret != 0 ) {
+    syslog( 'err', "Failed to create clone." );
+    print "Failed to create clone \n";
+    print "The original target image was left untouched.\n";
+    exit 1;
+}
 
 # Install new packages
 syslog( 'info', "Installing new packages to target image [$target_image]" );
 syslog( 'info', "Packages: $ENV{'VYATTA_NEW_PKGS'}" );
 print `vyatta-squashfs-chroot $clone INSTALL`;
-my $ret = $? >> 8;
+$ret = $? >> 8;
 if ( $ret != 0 ) {
     syslog( 'err', "Failed to install new packages. Removing cloned image ($clone)" );
     print "Failed to install new packages to target image: $target_image.\n";
