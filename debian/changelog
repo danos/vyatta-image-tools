@@ -1,3 +1,16 @@
+vyatta-image-tools (5.23) unstable; urgency=medium
+
+  * HOTFIX: Clear build time sources
+  * HOTFIX: Special handling of apt-get commands
+  * HOTFIX: Dont use dist-upgrade for dry-run
+  * HOTFIX: Shell fixes
+  * HOTFIX: Relax regex for image and package names
+  * HOTFIX: Print an error for each erroneous file
+  * HOTFIX: Use random number for cloned image name
+  * HOTFIX: Perltidy
+
+ -- Erik Ziegenbalg <Erik.Ziegenbalg@vyatta.att-mail.com>  Tue, 14 Jan 2020 11:00:25 -0800
+
 vyatta-image-tools (5.22) unstable; urgency=medium
 
   * Vyatta-HOTFIX
