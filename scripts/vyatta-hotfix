@@ -55,20 +55,25 @@ my @pkgs = @ARGV[ 2 .. $#ARGV ];
 if ( scalar @pkgs == 0 ) {
     exit 1;
 }
+my $invalid = 0;
 for ( my $i = 0 ; $i < scalar @pkgs ; $i++ ) {
     my $path = $pkgs[$i];
     my $file = basename($path);
     unless ( $file =~ m/^[A-Za-z0-9\.\-\_\+\/\~]+$/ ) {
         print "Invalid package name: [$file]\n";
-        exit 1;
+        $invalid = 1;
     }
     unless ( -f $path ) {
         print "Selected file does not exist: $path\n";
-        exit 1;
+        $invalid = 1;
     }
     unless ( $file =~ m/\.deb$/ ) {
         print "Selected file is not a debian package: $path\n";
+	$invalid = 1;
     }
+}
+if ( $invalid == 1 ) {
+	exit 1;
 }
 
 $ENV{'VYATTA_NEW_PKGS'} = join " ", @pkgs;
