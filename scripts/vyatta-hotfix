@@ -20,7 +20,7 @@ use Vyatta::Live;
 
 exit 1 unless defined $ARGV[0];
 die "Argument contains unsanitary characters, stopped"
-  if ( $ARGV[0] =~ m|[^-A-Za-z0-9_/.~]| );
+  if ( $ARGV[0] =~ m|[^-A-Za-z0-9_/.~+]| );
 my $target_image = "$ARGV[0]";
 
 my $client = Vyatta::Configd::Client->new();
@@ -58,7 +58,7 @@ if ( scalar @pkgs == 0 ) {
 for ( my $i = 0 ; $i < scalar @pkgs ; $i++ ) {
     my $path = $pkgs[$i];
     my $file = basename($path);
-    unless ( $file =~ m/^[A-Za-z0-9\.\-\_\+\/]+$/ ) {
+    unless ( $file =~ m/^[A-Za-z0-9\.\-\_\+\/\~]+$/ ) {
         print "Invalid package name: [$file]\n";
         exit 1;
     }
