@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0-only
 
-# Copyright (c) 2018-2019, AT&T Intellectual Property.
+# Copyright (c) 2018-2020, AT&T Intellectual Property.
 # All Rights Reserved.
 
 # Copyright (c) 2014-2017 by Brocade Communications Systems, Inc.
@@ -717,8 +717,8 @@ EOF
 install_grub_bios ()
 {
     local opt_arr=( "$@" )
-    local grub_root=${opt_arr[0]}        # mountpoint
-    local grub_inst_drvs=( ${opt_arr[@]:1} )    # drive name (e.g. sda)
+    local grub_root=${opt_arr[0]}               # mountpoint
+    local grub_inst_drvs=( ${opt_arr[@]:1} )    # drive (e.g. sda) or partition
 
     for d in ${grub_inst_drvs[@]}; do
 
@@ -749,8 +749,10 @@ install_grub_bios ()
 install_grub_efi ()
 {
     local opt_arr=( "$@" )
-    local root=${opt_arr[0]}        # mountpoint
-    local grub_inst_drv=( "${opt_arr[@]:1}" )    # drive name (e.g. sda)
+    local root=${opt_arr[0]}                     # mountpoint
+    local drv=${opt_arr[1]}                      # drive name (e.g. sda)
+    local grub_inst_drv=( "${opt_arr[@]:2}" )    # drive or partition name
+    local esp_part=$(fdisk -l /dev/$drv 2>/dev/null | grep 'EFI System' | cut -d ' ' -f1)
 
     for d in ${grub_inst_drv[@]}; do
 
@@ -758,9 +760,8 @@ install_grub_efi ()
 	fail_exit "/dev/$d: Invalid drive/partition."
     fi
 
-    local esp_part=$(fdisk -l /dev/$d 2>/dev/null | grep 'EFI System' | cut -d' ' -f1)
     if [ ! -b "$esp_part" ]; then
-	fail_exit "$esp_part: Invalid drive/partition."
+	fail_exit "$esp_part: Invalid drive/partition, no ESP on /dev/$drv."
     fi
 
     mkdir -p $root/boot/efi
@@ -871,14 +872,15 @@ install_grub_efi_bootmgr_entry ()
 # setup grub on the boot sector of a user selected drive
 install_grub () {
     local opt_arr=( "$@" )
-    local grub_root=${opt_arr[0]}        # mountpoint
-    local grub_setup_args="-u ${opt_arr[1]}"     # image name
-    local grub_inst_drvs=( ${opt_arr[@]:2} )    # drive names (e.g. sda)
+    local grub_root=${opt_arr[0]}            # mountpoint
+    local grub_setup_args="-u ${opt_arr[1]}" # image name
+    local grub_inst_drv=${opt_arr[2]}        # drive name (e.g. sda)
+    local grub_inst_drvs=( ${opt_arr[@]:3} ) # drive or partition names
 
     install -m755 -d $grub_root/boot/grub
 
     if [ -d /sys/firmware/efi ] ; then
-	install_grub_efi $grub_root ${grub_inst_drvs[@]}
+	install_grub_efi $grub_root $grub_inst_drv ${grub_inst_drvs[@]}
 	install_grub_efi_bootmgr_entry ${grub_inst_drvs[@]}
     else
 	install_grub_bios $grub_root ${grub_inst_drvs[@]}
@@ -926,13 +928,13 @@ prepare_install_root ()
 
 	# install bootloader for newly created partitions
 	if [ -n "$UNDERLYING" ]; then
-		install_grub "${WRITE_ROOT}" "${IMAGE_NAME}" $UNDERLYING || \
+		install_grub "${WRITE_ROOT}" "${IMAGE_NAME}" $UNDERLYING $UNDERLYING || \
 		return 1
 	elif is_onie_boot; then
-		install_grub "${WRITE_ROOT}" "${IMAGE_NAME}" "${PART}" || \
+		install_grub "${WRITE_ROOT}" "${IMAGE_NAME}" "${INST_DRV}" "${PART}" || \
 		return 1
 	elif [ "${PART_TYPE}" == "new" ] ; then
-		install_grub "${WRITE_ROOT}" "${IMAGE_NAME}" "${INST_DRV}" || \
+		install_grub "${WRITE_ROOT}" "${IMAGE_NAME}" "${INST_DRV}" "${INST_DRV}" || \
 		return 1
 	fi
 
