@@ -4,7 +4,7 @@
 
 # **** License ****
 #
-# Copyright (c) 2018-2019, AT&T Intellectual Property.
+# Copyright (c) 2018-2020, AT&T Intellectual Property.
 # All Rights Reserved.
 #
 # License:
@@ -153,6 +153,8 @@ sub build_onie_cmd {
         $global->{'ubac'}       = 'yes';
         $global->{'grub-users'} = $grub_users;
     }
+
+    $global->{'efi'} = ( -d "/sys/firmware/efi" ) ? "yes" : "no";
 
     open( my $fh, '<', $t );
     my $template = Template->new();

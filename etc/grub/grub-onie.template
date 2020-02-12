@@ -23,11 +23,11 @@ fi
 menuentry vRouter --unrestricted {
  search --no-floppy --label --set=root vRouter
  echo    'Loading vRouter ...'
- chainloader +1
+ chainloader [% IF global.item('efi') == 'yes' %]/boot/grub/x86_64-efi/core.efi[% ELSE %]+1[% END %]
 }
 # Menu entry to chainload ONIE
 menuentry ONIE {
  search --no-floppy --label --set=root ONIE-BOOT
  echo    'Loading ONIE ...'
- chainloader +1
+ chainloader [% IF global.item('efi') == 'yes' %]/grub/x86_64-efi/core.efi[% ELSE %]+1[% END %]
 }
