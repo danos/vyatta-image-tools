@@ -869,6 +869,36 @@ install_grub_efi_bootmgr_entry ()
     done
 }
 
+install_grub_master ()
+{
+    local opt_arr=( "$@" )
+    local root=${opt_arr[0]}                 # mountpoint
+    local drv=${opt_arr[1]}                  # drive name (e.g. sda)
+
+    if [ -d /sys/firmware/efi ] ; then
+	local esp_part=$(fdisk -l /dev/$drv 2>/dev/null | grep 'EFI System' | cut -d ' ' -f1)
+
+	if [ ! -b "$esp_part" ]; then
+	    fail_exit "$esp_part: Invalid drive/partition for grub master."
+	fi
+
+	mkdir -p $root/boot/efi
+	if ! try_mount "$esp_part $root/boot/efi"; then
+	    fail_exit "$esp_part: Cannot mount partition for grub master."
+	fi
+
+	run_command grub-install --no-floppy --recheck \
+		    --efi-directory=$root/boot/efi \
+		    --root-directory=$root/boot/grub-master /dev/$drv 2>&1
+
+	run_command umount $root/boot/efi
+	rmdir $root/boot/efi
+    else
+	run_command grub-install --no-floppy --recheck \
+		    --root-directory=$root/boot/grub-master /dev/$drv 2>&1
+    fi
+}
+
 # setup grub on the boot sector of a user selected drive
 install_grub () {
     local opt_arr=( "$@" )
@@ -950,8 +980,7 @@ prepare_install_root ()
             ${vyatta_sbindir}/vyatta_update_grub.pl --build-onie=${VII_CONSOLE},${VII_CONSOLE_SPEED},,,"${WRITE_ROOT}/boot/grub-master/boot/grub/grub.cfg"
 		fi
 
-		run_command grub-install --no-floppy --recheck \
-			--root-directory=${WRITE_ROOT}/boot/grub-master /dev/${INST_DRV} 2>&1
+		install_grub_master "${WRITE_ROOT}" "${INST_DRV}"
 	fi
 
 	exec 1>&3       # restore stdout
