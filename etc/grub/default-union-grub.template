@@ -38,7 +38,7 @@ menuentry "Vyatta [% cfg.item('image-name') %] (Configured console)" --unrestric
             set console_param="$boot_console,$serial_speed"
         fi
     fi
-    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 iommu=pt vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param
+    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 [% global.item('pt-cmd') %]vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param
     initrd /boot/[% cfg.item('image-name') %]/initrd.img
 }
 [% UNLESS global.item('reduced') == 1 %]
@@ -50,7 +50,7 @@ menuentry "Vyatta [% cfg.item('image-name') %] (Configured console)" {
             set console_param="$boot_console,$serial_speed"
         fi
     fi
-    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 iommu=pt vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param
+    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 [% global.item('pt-cmd') %]vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param
     initrd /boot/[% cfg.item('image-name') %]/initrd.img
 }
 
@@ -62,7 +62,7 @@ menuentry "Lost password change [% cfg.item('image-name') %] (Configured console
             set console_param="$boot_console,$serial_speed"
         fi
     fi
-    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 iommu=pt vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param init=/opt/vyatta/sbin/standalone_root_pw_reset
+    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 [% global.item('pt-cmd') %]vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param init=/opt/vyatta/sbin/standalone_root_pw_reset
     initrd /boot/[% cfg.item('image-name') %]/initrd.img
 }
 
@@ -74,7 +74,7 @@ menuentry "Configuration Recovery for above image (Configured console)" {
             set console_param="$boot_console,$serial_speed"
         fi
     fi
-    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 iommu=pt vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param init=/opt/vyatta/sbin/standalone_config_recovery
+    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 [% global.item('pt-cmd') %]vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param init=/opt/vyatta/sbin/standalone_config_recovery
     initrd /boot/[% cfg.item('image-name') %]/initrd.img
 }
 [% END %]

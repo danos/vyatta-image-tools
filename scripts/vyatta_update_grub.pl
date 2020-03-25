@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 # SPDX-License-Identifier: GPL-2.0-only
 
-
 # **** License ****
 #
 # Copyright (c) 2018-2020, AT&T Intellectual Property.
@@ -37,6 +36,8 @@ my $grub_onie_cfg      = '/boot/grub-master/boot/grub/grub.cfg';
 my $grub_onie_template = '/opt/vyatta/etc/grub/grub-onie.template';
 
 my $cfg_file = '/config/config.boot';
+
+my $pt_enable = 'iommu=pt ';
 
 sub gen_pass {
     my $p = shift;
@@ -84,11 +85,12 @@ sub create_vyatta_config_grub_options {
 }
 
 sub vga_is_present {
-  return ( qx(lspci 2> /dev/null) =~ /VGA/ );
+    return ( qx(lspci 2> /dev/null) =~ /VGA/ );
 }
 
 sub build_grub_cmd {
-    my ( $reduced, $index, $grub_users, $gcfg, $gtemplate, @images ) = (@_);
+    my ( $reduced, $index, $grub_users, $gcfg, $gtemplate, $pt_cmd, @images ) =
+      (@_);
     if ( $index eq "" ) {
         die __FILE__ . ": Missing input: \$index.\n";
     }
@@ -115,6 +117,7 @@ sub build_grub_cmd {
     my $global->{'reduced'} = $reduced;
     $global->{'date'}    = localtime();
     $global->{'default'} = $index;
+    $global->{'pt-cmd'}  = $pt_cmd;
 
     # If no VGA in system, 1st serial port automatically becomes the console
     $global->{'append-serial'} = vga_is_present() ? 'yes' : 'no';
@@ -191,9 +194,18 @@ sub generate_grub_cmd {
         push( @images, $image );
     }
 
+    my $pt_cmd = $pt_enable;
+    my $iommu  = $configd->tree_get_full_hash("system iommu");
+    if ( defined($iommu) ) {
+        $iommu = $iommu->{'iommu'};
+
+        my $passthrough = $iommu->{'passthrough'};
+        $pt_cmd = $passthrough ? $pt_enable : "";
+    }
+
     # Build a working grub.cfg with all images found...
     build_grub_cmd( $reduced, $index, $grub_users, $grub_cfg,
-        $grub_template, @images );
+        $grub_template, $pt_cmd, @images );
 
     # Update onie
     if ( is_onie_system() ) {
@@ -341,10 +353,8 @@ if ( defined($build_grub) ) {
                 ]
             };
         }
-        build_grub_cmd(
-            $reduced,  $index,        $grub_users,
-            $grub_cfg, $template_cfg, @images
-        );
+        build_grub_cmd( $reduced, $index, $grub_users,
+            $grub_cfg, $template_cfg, $pt_enable, @images );
         exit(0);
     }
     else {
