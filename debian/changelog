@@ -1,3 +1,12 @@
+vyatta-image-tools (5.25) unstable; urgency=medium
+
+  [ James Wheatley ]
+  * Fix query for iommu config when YANG not present (Fixes: VRVDR-50431)
+
+  [ Mike Manning ]
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Mon, 30 Mar 2020 15:21:14 +0100
+
 vyatta-image-tools (5.24) unstable; urgency=medium
 
   [ Mike Manning ]
