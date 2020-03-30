@@ -195,10 +195,9 @@ sub generate_grub_cmd {
     }
 
     my $pt_cmd = $pt_enable;
-    my $iommu  = $configd->tree_get_full_hash("system iommu");
+    my $iommu  = $configd->tree_get_full_hash("system");
+    $iommu = $iommu->{'system'}->{'iommu'};
     if ( defined($iommu) ) {
-        $iommu = $iommu->{'iommu'};
-
         my $passthrough = $iommu->{'passthrough'};
         $pt_cmd = $passthrough ? $pt_enable : "";
     }
