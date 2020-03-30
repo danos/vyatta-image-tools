@@ -1,3 +1,18 @@
+vyatta-image-tools (5.24) unstable; urgency=medium
+
+  [ Mike Manning ]
+  * ONIE install for UEFI: check for ESP on drive, not partition
+  * ONIE install for UEFI: specify EFI dir when installing grub master
+  * ONIE install for UEFI: use secure-boot option for grub master
+  * ONIE install for UEFI: fix chainloader for grub master
+
+  [ James Wheatley ]
+  * Allow option to configure IOMMU passthrough mode (Fixes: VRVDR-50431)
+
+  [ Mike Manning ]
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Mon, 30 Mar 2020 11:12:10 +0100
+
 vyatta-image-tools (5.23) unstable; urgency=medium
 
   * HOTFIX: Clear build time sources
