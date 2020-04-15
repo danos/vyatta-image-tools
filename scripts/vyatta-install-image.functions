@@ -204,7 +204,7 @@ get_response () {
 get_response_raw () {
   local ldefault="$1"
   local loptions=$(toupper "$2")
-
+  local option="$3"
 
   if [ "$VYATTA_PROCESS_CLIENT" == "gui2_rest" ]; then
       myresponse=$ldefault
@@ -212,12 +212,15 @@ get_response_raw () {
       # get the response from the user
       read myresponse
       if [[ $VYATTA_PROCESS_CLIENT == "yes" ]]; then
-	      echo >&2
+          echo >&2
+      elif [[ $option == "nodef" ]]; then
+          # do not use default for interactive install
+          ldefault=""
       fi
   fi
 
   # Check to see if the user accepts the default
-  if [ -z "$myresponse" ]; then
+  if [ -z "$myresponse" ] && [ -n "$ldefault" ]; then
     echo -n $ldefault
   elif [ -n "$loptions" ]; then
     # make sure response is a valid option
@@ -1152,8 +1155,8 @@ create_admin_grub_account () {
 
 _get_admin_settings () {
     while true; do
-        echo -en "\nEnter username for administrator account [$VII_ADMIN_USERNAME]: "
-        VII_ADMIN_USERNAME=$(get_response_raw "$VII_ADMIN_USERNAME")
+        echo -en "\nEnter username for administrator account: "
+        VII_ADMIN_USERNAME=$(get_response_raw "$VII_ADMIN_USERNAME" "" "nodef")
 
         if ! ${vyatta_sbindir}/vyatta_check_username.pl "$VII_ADMIN_USERNAME"; then
             continue
@@ -1171,8 +1174,15 @@ _get_admin_grub_settings () {
         VII_ENABLE_GRUB_PASSWORD=$(get_response "$VII_ENABLE_GRUB_PASSWORD" "Yes No Y N")
 
         if [[ $VII_ENABLE_GRUB_PASSWORD =~ ^[Yy] ]]; then
-            echo -en "Enter username [$VII_GRUB_USERNAME]: "
-            VII_GRUB_USERNAME=$(get_response_raw "$VII_GRUB_USERNAME")
+            while true; do
+                echo -en "Enter admin Grub username: "
+                VII_GRUB_USERNAME=$(get_response_raw "$VII_GRUB_USERNAME" "" "nodef")
+
+                if [ -n "$VII_GRUB_USERNAME" ]; then
+                    break
+                fi
+            done
+
             echo -en "Enter admin Grub password: "
             VII_GRUB_PASSWORD=$(_dialog_enter_password "$VII_GRUB_USERNAME" "plaintext")
         fi
