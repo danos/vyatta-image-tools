@@ -1,3 +1,9 @@
+vyatta-image-tools (5.26) unstable; urgency=medium
+
+  * Remove default and force selection of user and grub user on install
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Tue, 21 Apr 2020 12:30:40 +0100
+
 vyatta-image-tools (5.25) unstable; urgency=medium
 
   [ James Wheatley ]
