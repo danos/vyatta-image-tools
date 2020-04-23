@@ -1,13 +1,13 @@
 : ${VII_IMAGE_NAME:=$(get_vyatta_version ${INSTALL_SOURCE_DIR} 2>/dev/null)} #VC The name of the image to be installed.
 : ${VII_IMAGE_REPLACE:="No"} #VC The default to replace an existing image of the same name.
 # Default admin username and password
-: ${VII_ADMIN_USERNAME:="vyatta"} #VC The default username installed on the system.
-: ${VII_ADMIN_PASSWORD:=$(SECRET='vyatta' encrypt_shadow_passwd | sed 's:/:\\/:g')} #VC The default password if not set.
+: ${VII_ADMIN_USERNAME:="tmpuser"} #VC The default username installed on the system.
+: ${VII_ADMIN_PASSWORD:=$(SECRET='tmppwd' encrypt_shadow_passwd | sed 's:/:\\/:g')} #VC The default password if not set.
 
 # Default admin grub username and password
 : ${VII_ENABLE_GRUB_PASSWORD:='No'} #VC Default to enable/disable a grub password.
-: ${VII_GRUB_USERNAME:='vyatta'}    #VC The default grub username installed on the system. These ubac's can also be set in the vyatta config.
-: ${VII_GRUB_PASSWORD:='vyatta'}    #VC The default grub password if not set.
+: ${VII_GRUB_USERNAME:='tmpuser'}    #VC The default grub username installed on the system. These ubac's can also be set in the vyatta config.
+: ${VII_GRUB_PASSWORD:='tmppwd'}    #VC The default grub password if not set.
 
 # Enable a reduced grub.cfg without password or recovery enteries
 : ${VII_GRUB_REDUCED:='No'} #VC This enables a reduced grub layout with only one grub entry per image. The default grub layout uses 4 entries which include password reset options.
