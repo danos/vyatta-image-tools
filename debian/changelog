@@ -1,3 +1,9 @@
+vyatta-image-tools (5.27) unstable; urgency=medium
+
+  * Modify default username/password for auto-install such as ONIE install
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Fri, 24 Apr 2020 10:32:16 +0100
+
 vyatta-image-tools (5.26) unstable; urgency=medium
 
   * Remove default and force selection of user and grub user on install
