@@ -41,6 +41,7 @@ postinstalld_SCRIPTS += postinstall.d/55-update-signed-efi
 postinstalld_SCRIPTS += postinstall.d/70-vyatta-xen
 postinstalld_SCRIPTS += postinstall.d/80-create-raid-config
 postinstalld_SCRIPTS += postinstall.d/90-configure
+postinstalld_SCRIPTS += postinstall.d/93-machine-id
 postinstalld_SCRIPTS += postinstall.d/95-mount-var-log
 postinstalld_SCRIPTS += postinstall.d/96-copy-var-log-to-partition
 postinstalld_SCRIPTS += postinstall.d/97-vyatta-install-log

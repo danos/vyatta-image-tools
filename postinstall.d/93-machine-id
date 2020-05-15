@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (c) 2020, AT&T Intellectual Property.
+#
+# Copy /etc/machine-id between installs
+#
+
+set -e
+
+: ${vyatta_prefix:=/opt/vyatta}
+: ${vyatta_exec_prefix:=$vyatta_prefix}
+: ${vyatta_sbindir:=${vyatta_exec_prefix}/sbin}
+
+source "${vyatta_sbindir}/vyatta-install-image.functions"
+
+function machine_id_configure ()
+{
+    # nothing to configure
+    # run by default, but can be disabled
+    echo "VII_POSTINSTALL_VYATTA_MACHINE_ID=${VII_POSTINSTALL_VYATTA_MACHINE_ID:-true}"
+}
+
+function copy_machine_id ()
+{
+    local root_dir=${1?Missing argument}
+    local image_name=${2?Missing argument}
+
+    if [ -e /etc/machine-id ]; then
+        run_command cp -p -f /etc/machine-id "${root_dir}/etc"
+        run_command sync
+        becho "Copied machine-id: $(cat /etc/machine-id)"
+    fi
+}
+
+case "$1" in
+    configure)
+	machine_id_configure
+	;;
+    run)
+	[ "${VII_POSTINSTALL_VYATTA_MACHINE_ID}" = 'true' ] && copy_machine_id $2 $3
+	;;
+    *)
+	fail_exit "$0: unknown command: \"$1\""
+	;;
+esac
+
+exit 0
