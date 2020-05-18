@@ -14,13 +14,6 @@ set -e
 
 source "${vyatta_sbindir}/vyatta-install-image.functions"
 
-function machine_id_configure ()
-{
-    # nothing to configure
-    # run by default, but can be disabled
-    echo "VII_POSTINSTALL_VYATTA_MACHINE_ID=${VII_POSTINSTALL_VYATTA_MACHINE_ID:-true}"
-}
-
 function copy_machine_id ()
 {
     local root_dir=${1?Missing argument}
@@ -35,10 +28,9 @@ function copy_machine_id ()
 
 case "$1" in
     configure)
-	machine_id_configure
 	;;
     run)
-	[ "${VII_POSTINSTALL_VYATTA_MACHINE_ID}" = 'true' ] && copy_machine_id $2 $3
+	copy_machine_id $2 $3
 	;;
     *)
 	fail_exit "$0: unknown command: \"$1\""
