@@ -1,3 +1,10 @@
+vyatta-image-tools (5.28) unstable; urgency=medium
+
+  [ Nicholas Brown ]
+  * persist /etc/machine-id between installs (Closes: VRVDR-51008)
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Mon, 18 May 2020 13:42:23 +0100
+
 vyatta-image-tools (5.27) unstable; urgency=medium
 
   * Modify default username/password for auto-install such as ONIE install
