@@ -91,8 +91,8 @@ sub check_file_perm {
     return 1 unless ( -x ${VYATTA_SHARED_STORAGE} );
     return 1 if check_home($file);
     my $result;
-    my @cmd = (${VYATTA_SHARED_STORAGE}, '--check', ${perm}, ${file});
-    run3(\@cmd, \undef, \$result);
+    my @cmd = ( ${VYATTA_SHARED_STORAGE}, '--check', ${perm}, ${file} );
+    run3( \@cmd, \undef, \$result );
     chomp $result;
     return 1 if ( defined($result) && $result eq "allowed" );
     print "Cannot access $file: permission denied\n";
@@ -107,41 +107,32 @@ sub conv_file {
     if ( $file =~ /(.+?):\/\/(.*)/ ) {
         $topdir = $1;
         $file   = $2;
-    }
-    elsif ( $file =~ /^\// ) {
+    } elsif ( $file =~ /^\// ) {
         $topdir = "running";
-    }
-    else {
+    } else {
         print "File: $filein not found \n";
         exit 1;
     }
     if ( $topdir eq "running" ) {
         $file = "/$file";
-    }
-    elsif ( lc($topdir) eq 'disk-install' ) {
+    } elsif ( lc($topdir) eq 'disk-install' ) {
         $file = "$live_image_root/$file";
-    }
-    elsif ( lc($topdir) eq 'tftp' ) {
+    } elsif ( lc($topdir) eq 'tftp' ) {
         $file   = $filein;
         $topdir = 'url';
-    }
-    elsif ( lc($topdir) eq 'http' ) {
+    } elsif ( lc($topdir) eq 'http' ) {
         $file   = $filein;
         $topdir = 'url';
-    }
-    elsif ( lc($topdir) eq 'ftp' ) {
+    } elsif ( lc($topdir) eq 'ftp' ) {
         $file   = $filein;
         $topdir = 'url';
-    }
-    elsif ( lc($topdir) eq 'scp' ) {
+    } elsif ( lc($topdir) eq 'scp' ) {
         $file   = $filein;
         $topdir = 'url';
-    }
-    elsif ( lc($topdir) eq 'sftp' ) {
+    } elsif ( lc($topdir) eq 'sftp' ) {
         $file   = $filein;
         $topdir = 'url';
-    }
-    else {
+    } else {
         foreach (qw(live-rw persistence persistence/rw)) {
             print "$live_image_root/boot/$topdir/$_ \n";
 
@@ -166,11 +157,9 @@ sub conv_file_to_rel {
     my ( $topdir, $filename ) = @_;
     if ( $topdir eq "running" ) {
         $filename =~ s?/?$topdir://?;
-    }
-    elsif ( $topdir eq "disk-install" ) {
+    } elsif ( $topdir eq "disk-install" ) {
         $filename =~ s?$live_image_root/?$topdir://?;
-    }
-    else {
+    } else {
         $filename =~
 s?$live_image_root/boot/$topdir/(live-rw|persistence|persistence/rw)/?$topdir://?;
     }
@@ -191,8 +180,7 @@ sub delete_file {
             system("rm -rf $file");
             print("Directory erased\n");
         }
-    }
-    elsif ( -f $file ) {
+    } elsif ( -f $file ) {
         my $print_file = conv_file_to_rel( $topdir, $file );
         if ( y_or_n("Do you want to erase the $print_file file?") ) {
             system("rm -rf $file");
@@ -209,20 +197,17 @@ sub url_copy {
     if ( $t_topdir eq 'url' && $f_topdir eq 'url' ) {
         print "Cannot copy a url to a url\n";
         exit 1;
-    }
-    elsif ( $t_topdir eq 'url' ) {
+    } elsif ( $t_topdir eq 'url' ) {
         exit 1 unless check_file_perm( $from, 'r' );
         if ( -d $from ) {
             print "Cannot upload an entire directory to url\n";
             exit 1;
-        }
-        elsif ( $to =~ /http/ ) {
+        } elsif ( $to =~ /http/ ) {
             print "Cannot upload to http url\n";
             exit 1;
         }
         curl( $from, $to, UPLOAD );
-    }
-    elsif ( $f_topdir eq 'url' ) {
+    } elsif ( $f_topdir eq 'url' ) {
         if ( -d $to ) {
             $from =~ /.*\/(.*)/;
             my $from_file = $1;
@@ -257,18 +242,15 @@ sub copy {
     if ( -d $from && -e $to && !( -d $to ) ) {
         print "Cannot copy a directory to a file.\n";
         return 1;
-    }
-    elsif ( -f $to || ( -d $to && -f "$to/$from_file" ) ) {
+    } elsif ( -f $to || ( -d $to && -f "$to/$from_file" ) ) {
         if ( y_or_n("This file exists; overwrite if needed?") ) {
             rsync( $from, $to );
         }
-    }
-    elsif ( -d $to && -d $from ) {
+    } elsif ( -d $to && -d $from ) {
         if ( y_or_n("This directory exists; would you like to merge?") ) {
             rsync( $from, $to );
         }
-    }
-    else {
+    } else {
         rsync( $from, $to );
     }
 }
@@ -340,8 +322,7 @@ sub curl {
     my $stdin = '';
     if ( length $u && length $p ) {
         $stdin = "user=\"$u:$p\"\n";
-    }
-    elsif ( length $u ) {
+    } elsif ( length $u ) {
         $stdin = "user=\"$u:\"\n";
         print
 "SSH public-key based authentication not yet implemented. Please provide a plaintext password.\n";
@@ -405,8 +386,7 @@ sub show {
     if ( -d $file ) {
         print "########### DIRECTORY LISTING ###########\n";
         system("ls -lGph  --group-directories-first $file");
-    }
-    elsif ( -T $file ) {
+    } elsif ( -T $file ) {
         print "########### FILE INFO ###########\n";
         my $filename = conv_file_to_rel( $topdir, $file );
         print "File Name: $filename\n";
@@ -417,8 +397,7 @@ sub show {
         system("file -sb $file");
         print "\n########### FILE DATA ###########\n";
         system("cat $file");
-    }
-    elsif ( $file =~ /.*\.pcap/ ) {
+    } elsif ( $file =~ /.*\.pcap/ ) {
         print "########### FILE INFO ###########\n";
         my $filename = conv_file_to_rel( $topdir, $file );
         print "File Name: $filename\n";
@@ -429,8 +408,7 @@ sub show {
         system("file -sb $file");
         print "\n########### FILE DATA ###########\n";
         system("tshark -r $file | less");
-    }
-    elsif ( -B $file ) {
+    } elsif ( -B $file ) {
         print "########### FILE INFO ###########\n";
         my $filename = conv_file_to_rel( $topdir, $file );
         print "File Name: $filename\n";
@@ -441,8 +419,7 @@ sub show {
         system("file -sb $file");
         print "\n########### FILE DATA ###########\n";
         system("hexdump -C $file| less");
-    }
-    else {
+    } else {
         my $filename = conv_file_to_rel( $topdir, $file );
         print "File: $filename not found\n";
     }
