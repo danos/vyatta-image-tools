@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # SPDX-License-Identifier: GPL-2.0-only
 
-# Copyright (c) 2017-2019, AT&T Intellectual Property.
+# Copyright (c) 2017-2020, AT&T Intellectual Property.
 # All Rights Reserved.
 
 # Copyright (c) 2014-2017 by Brocade Communications Systems, Inc.
@@ -17,6 +17,7 @@ use File::Slurp qw(read_file);
 use Vyatta::Configd;
 use Vyatta::Live;
 use IPC::Run3;
+use URI;
 
 my ( $show, $delete, $updateone );
 my $check = 1;
@@ -35,6 +36,8 @@ use constant {
     UPLOAD   => 1,
 };
 my $VYATTA_SHARED_STORAGE = '/opt/vyatta/sbin/vyatta_shared_storage';
+my $SSH_KNOWN_HOSTS       = '/etc/ssh/ssh_known_hosts';
+my $SSH_KNOWN_HOSTS_OLD   = '/etc/ssh/ssh_known_hosts.old';
 
 GetOptions(
     "show=s"      => \$show,
@@ -62,7 +65,6 @@ if (@copy) {
     # Per requirement, set source interface according to
     # 'security ssh-client source-interface'
     if ( !length $si ) {
-        use Vyatta::Configd;
         my $client = Vyatta::Configd::Client->new();
         my $ret    = eval {
             $client->tree_get_hash("security ssh-client source-interface");
@@ -189,6 +191,167 @@ sub delete_file {
     }
 }
 
+sub ssh_get_fingerprint {
+    my $key_entry = shift;
+
+    # Fingerprint fmt: <key length> <fingerprint str> <host hash> (<KEY TYPE>)
+    my $fingerprint = qx(echo '$key_entry' | ssh-keygen -qlf -);
+    my ( $fp_str, $fp_key_type ) = ( split / /, $fingerprint )[ 1, 3 ];
+    $fp_key_type =~ s/[()\n]+//g;
+
+    return ( $fp_str, $fp_key_type );
+}
+
+sub ssh_keys_manage {
+    my $uristr = shift;
+    return unless $uristr =~ m{(.+?)://(.*)};
+
+    my $scheme = lc($1);
+    my $part   = $2;
+    return unless $scheme eq "scp" || $scheme eq "sftp";
+
+    # Curl does not support ECDSA, and DSA is not recommended
+    my @key_types = ( "RSA", "ED25519" );
+
+    # URI module does not support scp, use sftp which has same scheme handling.
+    # Do not use canonical form so that uppercase characters kept in hostname,
+    # but this is then not normalized so trailing ':' must be removed.
+    my $uri  = URI->new( "sftp://" . $part );
+    my $host = $uri->host();
+    my $port = $uri->port();
+    $host =~ s/:.*//;
+    return unless length($host);
+
+    my $key_req = join( ",", @key_types );
+    my @key_entries =
+      qx(ssh-keyscan -p '$port' -H -t $key_req '$host' 2>/dev/null)
+      or return;
+    chomp(@key_entries);
+
+    # Map of key type (e.g. RSA & ED25519 as shown in fingerprint) to key entry
+    # Key entry fmt: <hash> <key type (e.g. ssh-rsa & ssh-ed25519)> <pub key>
+    my %key_entries_map;
+    foreach (@key_entries) {
+        my $key_type = ( split / /, $_ )[1];
+        $key_type =~ s/ssh-//;
+        $key_type =~ s/-.*//;
+        $key_entries_map{ uc($key_type) } = $_;
+    }
+
+    # The key type of entries may not be in the same order as requested
+    my $key_entry;
+    foreach (@key_types) {
+        $key_entry = $key_entries_map{$_};
+        last if defined $key_entry;
+    }
+
+    my $stored_fingerprint;
+    if ( -f $SSH_KNOWN_HOSTS ) {
+        $stored_fingerprint =
+          qx(ssh-keygen -q -l -F '$host' -f $SSH_KNOWN_HOSTS);
+    }
+
+    if ($stored_fingerprint) {
+
+        # Stored fingerprint fmt: <host> <KEY TYPE> <fingerprint str>
+        my ( $stored_fp_key_type, $stored_fp_str ) =
+          ( split / /, $stored_fingerprint )[ 1, 2 ];
+        my $found_entry = $key_entries_map{$stored_fp_key_type};
+        my ( $fp_str, $fp_key_type );
+
+        if ($found_entry) {
+            ( $fp_str, $fp_key_type ) = ssh_get_fingerprint($found_entry);
+
+            # Match stored key, return so as to let Curl succeed
+            return if $fp_str eq $stored_fp_str;
+        } else {
+            foreach my $key_type ( keys %key_entries_map ) {
+                if ( $key_type ne $stored_fp_key_type ) {
+                    $found_entry = $key_entries_map{$key_type};
+                    last;
+                }
+            }
+
+            # No match or alternative found, return to let Curl report failure
+            return unless $found_entry;
+            ( $fp_str, $fp_key_type ) = ssh_get_fingerprint($found_entry);
+        }
+
+        my ( $hash, $key_type, $pub_key ) = split / /, $found_entry;
+
+        (
+            my $msg = qq{
+        ***********************************************************
+        *    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED      *
+        ***********************************************************
+        IT IS POSSIBLE THAT YOU ARE SUBJECT TO A MAN-IN-THE-MIDDLE ATTACK
+        AND ARE BEING EAVESDROPPED ON!
+        It is also possible that the key for this host has recently changed.
+        The fingerprint for the $fp_key_type key sent by the remote host is
+        $fp_str.
+        The fingerprint for the $stored_fp_key_type key stored for this host is
+        $stored_fp_str.
+        By accepting, you are trusting the new host key from now on for all
+        initiated SSH connections, the config will be updated using this hash:
+        $hash
+        Are you sure you want to continue?}
+        ) =~ s/^ {8}//mg;
+
+        return unless y_or_n($msg);
+
+        # Can only remove host config directly if hostname/IP is not hashed.
+        # So remove key first, get hash or clear-text host, then delete config.
+        qx(ssh-keygen -R '$host' -f $SSH_KNOWN_HOSTS);
+
+        my @diff = grep /^>/, qx(diff $SSH_KNOWN_HOSTS $SSH_KNOWN_HOSTS_OLD);
+
+        # Fmt: '>' <host> <key type> <pub key>
+        my $host_to_delete = ( split / /, $diff[0] )[1];
+
+        my $cfg_client = Vyatta::Configd::Client->new();
+        $cfg_client->session_setup("$$");
+        $cfg_client->delete(
+            [ "security", "ssh-known-hosts", "host", $host_to_delete ] );
+        $cfg_client->set(
+            [
+                "security", "ssh-known-hosts",
+                "host",     $hash,
+                "key",      "$key_type $pub_key"
+            ]
+        );
+        $cfg_client->commit("User accepted updated ssh host key for '$host'");
+        $cfg_client->session_teardown();
+
+    } else {
+        my ( $hash, $key_type, $pub_key ) = split / /, $key_entry;
+        my ( $fp_str, $fp_key_type ) = ssh_get_fingerprint($key_entry);
+
+        (
+            my $msg = qq{
+        The authenticity of host '$host' cannot be verified.
+        $fp_key_type key fingerprint is $fp_str.
+        By accepting, you are trusting this host from now on for all initiated
+        SSH connections, and the configuration will be updated using this hash:
+        $hash
+        Are you sure you want to continue?}
+        ) =~ s/^ {8}//mg;
+
+        return unless y_or_n($msg);
+
+        my $cfg_client = Vyatta::Configd::Client->new();
+        $cfg_client->session_setup("$$");
+        $cfg_client->set(
+            [
+                "security", "ssh-known-hosts",
+                "host",     $hash,
+                "key",      "$key_type $pub_key"
+            ]
+        );
+        $cfg_client->commit("User accepted ssh host key for '$host'");
+        $cfg_client->session_teardown();
+    }
+}
+
 sub url_copy {
     my ( $from, $to ) = @_;
     my ( $f_topdir, $t_topdir );
@@ -206,6 +369,7 @@ sub url_copy {
             print "Cannot upload to http url\n";
             exit 1;
         }
+        ssh_keys_manage($to);
         curl( $from, $to, UPLOAD );
     } elsif ( $f_topdir eq 'url' ) {
         if ( -d $to ) {
@@ -219,6 +383,7 @@ sub url_copy {
                 }
             }
         }
+        ssh_keys_manage($from);
         curl( $from, $to, DOWNLOAD );
     }
     exit 0;
