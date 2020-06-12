@@ -1,3 +1,10 @@
+vyatta-image-tools (5.25.2) unstable; urgency=medium
+
+  * Run perltidy -ce on vyatta-image-tools.pl
+  * Modelled copy command should not require prior config of ssh-known-hosts
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Fri, 12 Jun 2020 19:04:29 +0100
+
 vyatta-image-tools (5.25.1) unstable; urgency=medium
 
   [ Nicholas Brown ]
