@@ -1,0 +1,60 @@
+#!/bin/sh
+# Copyright (c) 2020, AT&T Intellectual Property.
+# All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# On image booted machines, we need to mount /boot from the image-specific
+# boot directory so that kernel package installation will put the
+# files in the right place.  We also have to mount /boot/grub from the
+# system-wide grub directory so that tools that edit the grub.cfg
+# file will find it in the expected location.
+#
+
+DESTDIR="${1:-/tmp}"
+
+systemd_dir="/lib/systemd/system"
+config_loaded_target_wants="$DESTDIR/config-loaded.target.wants"
+
+LIVE_ROOTFS_PATH=`/opt/vyatta/sbin/vyatta-live-image get_live_rootfs_path`
+IMAGE_PATH=`/opt/vyatta/sbin/vyatta-live-image get_image_path`
+
+
+setup_boot_systemd() {
+    cat <<EOF > $systemd_dir/boot.mount
+[Unit]
+Before=local-fs.target
+ConditionKernelCommandLine=vyatta-union
+
+[Mount]
+What=$IMAGE_PATH
+Where=/boot
+Type=none
+Options=bind
+EOF
+
+ln -sf "$systemd_dir/boot.mount" "$config_loaded_target_wants"
+}
+
+
+setup_bootgrub_systemd() {
+    cat <<EOF > $systemd_dir/boot-grub.mount
+[Unit]
+Before=local-fs.target
+RequiresMountsFor=/boot
+ConditionKernelCommandLine=vyatta-union
+
+[Mount]
+What=$LIVE_ROOTFS_PATH/boot/grub
+Where=/boot/grub
+Type=none
+Options=bind
+EOF
+
+ln -sf "$systemd_dir/boot-grub.mount" "$config_loaded_target_wants"
+}
+
+
+mkdir -p $config_loaded_target_wants
+setup_boot_systemd
+setup_bootgrub_systemd
