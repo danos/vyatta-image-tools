@@ -16,6 +16,7 @@ use File::Slurp qw(read_file);
 
 use Vyatta::Configd;
 use Vyatta::Live;
+use Vyatta::SSHClient;
 use IPC::Run3;
 use URI;
 
@@ -37,8 +38,6 @@ use constant {
     UPLOAD   => 1,
 };
 my $VYATTA_SHARED_STORAGE = '/opt/vyatta/sbin/vyatta_shared_storage';
-my $SSH_KNOWN_HOSTS       = '/etc/ssh/ssh_known_hosts';
-my $SSH_KNOWN_HOSTS_OLD   = '/etc/ssh/ssh_known_hosts.old';
 
 GetOptions(
     "show=s"      => \$show,
@@ -192,17 +191,6 @@ sub delete_file {
     }
 }
 
-sub ssh_get_fingerprint {
-    my $key_entry = shift;
-
-    # Fingerprint fmt: <key length> <fingerprint str> <host hash> (<KEY TYPE>)
-    my $fingerprint = qx(echo '$key_entry' | ssh-keygen -qlf -);
-    my ( $fp_str, $fp_key_type ) = ( split / /, $fingerprint )[ 1, 3 ];
-    $fp_key_type =~ s/[()\n]+//g;
-
-    return ( $fp_str, $fp_key_type );
-}
-
 sub insecure_confirm {
     my $host = shift;
 
@@ -233,9 +221,6 @@ sub ssh_keys_manage {
     my $part   = $2;
     return unless $scheme eq "scp" || $scheme eq "sftp";
 
-    # Curl does not support ECDSA, and DSA is not recommended
-    my @key_types = ( "RSA", "ED25519" );
-
     # URI module does not support scp, use sftp which has same scheme handling.
     # Do not use canonical form so that uppercase characters kept in hostname,
     # but this is then not normalized so trailing ':' must be removed.
@@ -246,62 +231,20 @@ sub ssh_keys_manage {
     return unless length($host);
     return if insecure_confirm($host);
 
-    my $key_req = join( ",", @key_types );
+    my $key_req = join( ",", @SSH_KEY_TYPES );
     my @key_entries =
-      qx(ssh-keyscan -p '$port' -H -t $key_req '$host' 2>/dev/null)
+      qx(/usr/bin/ssh-keyscan -p '$port' -H -t $key_req '$host' 2>/dev/null)
       or return;
     chomp(@key_entries);
 
-    # Map of key type (e.g. RSA & ED25519 as shown in fingerprint) to key entry
-    # Key entry fmt: <hash> <key type (e.g. ssh-rsa & ssh-ed25519)> <pub key>
-    my %key_entries_map;
-    foreach (@key_entries) {
-        my $key_type = ( split / /, $_ )[1];
-        $key_type =~ s/ssh-//;
-        $key_type =~ s/-.*//;
-        $key_entries_map{ uc($key_type) } = $_;
-    }
+    my ( $key_entry, $stored_fp_str, $stored_fp_key_type ) =
+      ssh_key_select( $SSH_KNOWN_HOSTS, $host, @key_entries );
+    return unless $key_entry;
 
-    # The key type of entries may not be in the same order as requested
-    my $key_entry;
-    foreach (@key_types) {
-        $key_entry = $key_entries_map{$_};
-        last if defined $key_entry;
-    }
+    my ( $hash, $key_type, $pub_key ) = split / /, $key_entry;
+    my ( $fp_str, $fp_key_type ) = ssh_get_fingerprint($key_entry);
 
-    my $stored_fingerprint;
-    if ( -f $SSH_KNOWN_HOSTS ) {
-        $stored_fingerprint =
-          qx(ssh-keygen -q -l -F '$host' -f $SSH_KNOWN_HOSTS);
-    }
-
-    if ($stored_fingerprint) {
-
-        # Stored fingerprint fmt: <host> <KEY TYPE> <fingerprint str>
-        my ( $stored_fp_key_type, $stored_fp_str ) =
-          ( split / /, $stored_fingerprint )[ 1, 2 ];
-        my $found_entry = $key_entries_map{$stored_fp_key_type};
-        my ( $fp_str, $fp_key_type );
-
-        if ($found_entry) {
-            ( $fp_str, $fp_key_type ) = ssh_get_fingerprint($found_entry);
-
-            # Match stored key, return so as to let Curl succeed
-            return if $fp_str eq $stored_fp_str;
-        } else {
-            foreach my $key_type ( keys %key_entries_map ) {
-                if ( $key_type ne $stored_fp_key_type ) {
-                    $found_entry = $key_entries_map{$key_type};
-                    last;
-                }
-            }
-
-            # No match or alternative found, return to let Curl report failure
-            return unless $found_entry;
-            ( $fp_str, $fp_key_type ) = ssh_get_fingerprint($found_entry);
-        }
-
-        my ( $hash, $key_type, $pub_key ) = split / /, $found_entry;
+    if ($stored_fp_str) {
 
         (
             my $msg = qq{
@@ -323,32 +266,28 @@ sub ssh_keys_manage {
 
         return unless y_or_n($msg);
 
-        # Can only remove host config directly if hostname/IP is not hashed.
-        # So remove key first, get hash or clear-text host, then delete config.
-        qx(ssh-keygen -R '$host' -f $SSH_KNOWN_HOSTS);
+        my $host_to_delete;
+        if ( -f $SSH_KNOWN_HOSTS ) {
+            $host_to_delete =
+              ssh_get_host_to_delete( $SSH_KNOWN_HOSTS, $host, $stored_fp_str );
+        }
 
-        my @diff = grep /^>/, qx(diff $SSH_KNOWN_HOSTS $SSH_KNOWN_HOSTS_OLD);
-
-        # Fmt: '>' <host> <key type> <pub key>
-        my $host_to_delete = ( split / /, $diff[0] )[1];
+        # The entry in SSH_KNOWN_HOSTS was changed under us
+        if ( !$host_to_delete ) {
+            print "\nConfig not updated due to another change, please retry\n";
+            return;
+        }
 
         my $cfg_client = Vyatta::Configd::Client->new();
         $cfg_client->session_setup("$$");
-        $cfg_client->delete(
-            [ "security", "ssh-known-hosts", "host", $host_to_delete ] );
-        $cfg_client->set(
-            [
-                "security", "ssh-known-hosts",
-                "host",     $hash,
-                "key",      "$key_type $pub_key"
-            ]
-        );
+        if ( $host_to_delete ne $hash ) {
+            ssh_delete_config( $cfg_client, $host_to_delete );
+        }
+        ssh_set_config( $cfg_client, $hash, $key_type, $pub_key );
         $cfg_client->commit("User accepted updated ssh host key for '$host'");
         $cfg_client->session_teardown();
 
     } else {
-        my ( $hash, $key_type, $pub_key ) = split / /, $key_entry;
-        my ( $fp_str, $fp_key_type ) = ssh_get_fingerprint($key_entry);
 
         (
             my $msg = qq{
@@ -364,13 +303,7 @@ sub ssh_keys_manage {
 
         my $cfg_client = Vyatta::Configd::Client->new();
         $cfg_client->session_setup("$$");
-        $cfg_client->set(
-            [
-                "security", "ssh-known-hosts",
-                "host",     $hash,
-                "key",      "$key_type $pub_key"
-            ]
-        );
+        ssh_set_config( $cfg_client, $hash, $key_type, $pub_key );
         $cfg_client->commit("User accepted ssh host key for '$host'");
         $cfg_client->session_teardown();
     }

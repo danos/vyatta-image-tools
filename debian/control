@@ -50,6 +50,7 @@ Depends:
  tshark,
  vyatta-base-systemd (>= 1.3),
  vyatta-image-tools-initramfs-tools,
+ vyatta-security-ssh-known-hosts-v1-yang (>= 0.10),
  vyatta-system (>= 2.22),
  ${misc:Depends},
  ${perl:Depends},
