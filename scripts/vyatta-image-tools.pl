@@ -27,6 +27,7 @@ my $live_image_root = get_live_image_root();
 my $u               = '';
 my $p               = '';
 my $si              = '';
+my $insecure        = $ENV{VY_COPY_INSECURE};
 $u  = $ENV{VY_COPY_USER}       if defined $ENV{VY_COPY_USER};
 $p  = $ENV{VY_COPY_PASS}       if defined $ENV{VY_COPY_PASS};
 $si = $ENV{VY_COPY_SOURCEINTF} if defined $ENV{VY_COPY_SOURCEINTF};
@@ -202,6 +203,28 @@ sub ssh_get_fingerprint {
     return ( $fp_str, $fp_key_type );
 }
 
+sub insecure_confirm {
+    my $host = shift;
+
+    return 0 unless $insecure;
+
+    (
+        my $msg = qq{
+        The authenticity of host '$host' cannot be verified.
+        You have chosen to skip host validation. While the traffic is encrypted,
+        this option is insecure in that the remote host identification will
+        not be checked. So man-in-the-middle attacks (MITM) cannot be detected
+        due to a subsequent change to the public key of the host.
+        By accepting, you are trusting this host for this SSH connection.
+        Are you sure you want to continue?}
+    ) =~ s/^ {8}//mg;
+
+    return 1 if y_or_n($msg);
+
+    $insecure = undef;
+    return 0;
+}
+
 sub ssh_keys_manage {
     my $uristr = shift;
     return unless $uristr =~ m{(.+?)://(.*)};
@@ -221,6 +244,7 @@ sub ssh_keys_manage {
     my $port = $uri->port();
     $host =~ s/:.*//;
     return unless length($host);
+    return if insecure_confirm($host);
 
     my $key_req = join( ",", @key_types );
     my @key_entries =
@@ -483,6 +507,8 @@ sub curl {
     } elsif ( $direction_flag == DOWNLOAD ) {
         @args = ( "curl", "-K-", "-#", "-o", $to, $from );
     }
+
+    push( @args, "-k" ) if $insecure;
 
     my $stdin = '';
     if ( length $u && length $p ) {
