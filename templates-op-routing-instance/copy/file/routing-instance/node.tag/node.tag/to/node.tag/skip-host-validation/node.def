@@ -1,0 +1,3 @@
+help: Skip host validation for copying files
+run: export VY_COPY_INSECURE=1
+     chvrf ${4} ${vyatta_sbindir}/vyatta-image-tools.pl --copy ${5} ${7}

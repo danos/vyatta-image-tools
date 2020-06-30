@@ -17,7 +17,7 @@ module vyatta-op-copy-file-v1 {
 		 Web: www.att.com";
 
 	description
-		"Copyright (c) 2019, AT&T Intellectual Property.
+		"Copyright (c) 2019-2020, AT&T Intellectual Property.
 		 All rights reserved.
 
 		Redistribution and use in source and binary forms, with or without
@@ -51,6 +51,9 @@ module vyatta-op-copy-file-v1 {
 
 		Defines the top level 'file' level under 'copy' for operational CLI";
 
+	revision 2020-06-30 {
+		description "Add option to skip host validation";
+	}
 	revision 2019-02-15 {
 		description "Initial version";
 	}
@@ -73,6 +76,12 @@ module vyatta-op-copy-file-v1 {
 						opd:privileged true;
 						type string;
 
+						opd:command skip-host-validation {
+							opd:help "Skip host validation (insecure)";
+							opd:on-enter 'export VY_COPY_INSECURE=1 && \
+								vyatta-image-tools.pl --copy "$3" "$5"';
+							opd:privileged true;
+						}
 						opd:command source-interface {
 							opd:help "Source interface used for copying";
 
@@ -83,6 +92,14 @@ module vyatta-op-copy-file-v1 {
 									vyatta-image-tools.pl --copy "$3" "$5"';
 								opd:privileged true;
 								type string;
+
+								opd:command skip-host-validation {
+									opd:help "Skip host validation (insecure)";
+									opd:on-enter 'export VY_COPY_INSECURE=1 && \
+										export VY_COPY_SOURCEINTF="$7" && \
+										vyatta-image-tools.pl --copy "$3" "$5"';
+									opd:privileged true;
+								}
 							}
 						}
 						opd:command user {
@@ -107,6 +124,13 @@ module vyatta-op-copy-file-v1 {
 										opd:secret true;
 										type string;
 
+										opd:command skip-host-validation {
+											opd:help "Skip host validation (insecure)";
+											opd:on-enter 'export VY_COPY_INSECURE=1 && \
+												export VY_COPY_USER="$7" && export VY_COPY_PASS="$9" && \
+												vyatta-image-tools.pl --copy "$3" "$5"';
+											opd:privileged true;
+										}
 										opd:command source-interface {
 											opd:help "Source interface used for copying";
 
@@ -118,9 +142,25 @@ module vyatta-op-copy-file-v1 {
 													vyatta-image-tools.pl --copy "$3" "$5"';
 												opd:privileged true;
 												type string;
+
+												opd:command skip-host-validation {
+													opd:help "Skip host validation (insecure)";
+													opd:on-enter 'export VY_COPY_INSECURE=1 && \
+														export VY_COPY_SOURCEINTF="${11}" && \
+														export VY_COPY_USER="$7" && export VY_COPY_PASS="$9" && \
+														vyatta-image-tools.pl --copy "$3" "$5"';
+													opd:privileged true;
+												}
 											}
 										}
 									}
+								}
+								opd:command skip-host-validation {
+									opd:help "Skip host validation (insecure)";
+									opd:on-enter 'export VY_COPY_INSECURE=1 && \
+										export VY_COPY_USER="$7" && \
+										vyatta-image-tools.pl --copy "$3" "$5"';
+									opd:privileged true;
 								}
 								opd:command source-interface {
 									opd:help "Source interface used for copying";
@@ -133,6 +173,15 @@ module vyatta-op-copy-file-v1 {
 											--copy "$3" "$5"';
 										opd:privileged true;
 										type string;
+
+										opd:command skip-host-validation {
+											opd:help "Skip host validation (insecure)";
+											opd:on-enter 'export VY_COPY_INSECURE=1 && \
+												export VY_COPY_SOURCEINTF="$9" && \
+												export VY_COPY_USER="$7" && \
+												vyatta-image-tools.pl --copy "$3" "$5"';
+											opd:privileged true;
+										}
 									}
 								}
 							}
