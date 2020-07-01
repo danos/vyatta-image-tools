@@ -1,3 +1,9 @@
+vyatta-image-tools (5.25.3) unstable; urgency=medium
+
+  * Provide an option to skip host validation for the modelled copy command
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Wed, 01 Jul 2020 15:13:43 +0100
+
 vyatta-image-tools (5.25.2) unstable; urgency=medium
 
   * Run perltidy -ce on vyatta-image-tools.pl
