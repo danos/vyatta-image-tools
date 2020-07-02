@@ -29,6 +29,7 @@ my $u               = '';
 my $p               = '';
 my $si              = '';
 my $insecure        = $ENV{VY_COPY_INSECURE};
+my $rtdomain        = $ENV{VYATTA_VRF};
 $u  = $ENV{VY_COPY_USER}       if defined $ENV{VY_COPY_USER};
 $p  = $ENV{VY_COPY_PASS}       if defined $ENV{VY_COPY_PASS};
 $si = $ENV{VY_COPY_SOURCEINTF} if defined $ENV{VY_COPY_SOURCEINTF};
@@ -231,14 +232,21 @@ sub ssh_keys_manage {
     return unless length($host);
     return if insecure_confirm($host);
 
+    my $known_hosts_file = $SSH_KNOWN_HOSTS;
+    my $vrfcmd           = '';
+    if ( length( $rtdomain // '' ) ) {
+        $known_hosts_file = "/run/ssh/vrf/$rtdomain/ssh_known_hosts";
+        $vrfcmd           = "/usr/sbin/chvrf '$rtdomain' ";
+    }
+
     my $key_req = join( ",", @SSH_KEY_TYPES );
     my @key_entries =
-      qx(/usr/bin/ssh-keyscan -p '$port' -H -t $key_req '$host' 2>/dev/null)
+qx(${vrfcmd}/usr/bin/ssh-keyscan -p '$port' -H -t $key_req '$host' 2>/dev/null)
       or return;
     chomp(@key_entries);
 
     my ( $key_entry, $stored_fp_str, $stored_fp_key_type ) =
-      ssh_key_select( $SSH_KNOWN_HOSTS, $host, @key_entries );
+      ssh_key_select( $known_hosts_file, $host, @key_entries );
     return unless $key_entry;
 
     my ( $hash, $key_type, $pub_key ) = split / /, $key_entry;
@@ -267,9 +275,10 @@ sub ssh_keys_manage {
         return unless y_or_n($msg);
 
         my $host_to_delete;
-        if ( -f $SSH_KNOWN_HOSTS ) {
+        if ( -f $known_hosts_file ) {
             $host_to_delete =
-              ssh_get_host_to_delete( $SSH_KNOWN_HOSTS, $host, $stored_fp_str );
+              ssh_get_host_to_delete( $known_hosts_file, $host,
+                $stored_fp_str );
         }
 
         # The entry in SSH_KNOWN_HOSTS was changed under us
@@ -281,9 +290,9 @@ sub ssh_keys_manage {
         my $cfg_client = Vyatta::Configd::Client->new();
         $cfg_client->session_setup("$$");
         if ( $host_to_delete ne $hash ) {
-            ssh_delete_config( $cfg_client, $host_to_delete );
+            ssh_delete_config( $cfg_client, $host_to_delete, $rtdomain );
         }
-        ssh_set_config( $cfg_client, $hash, $key_type, $pub_key );
+        ssh_set_config( $cfg_client, $hash, $key_type, $pub_key, $rtdomain );
         $cfg_client->commit("User accepted updated ssh host key for '$host'");
         $cfg_client->session_teardown();
 
@@ -303,7 +312,7 @@ sub ssh_keys_manage {
 
         my $cfg_client = Vyatta::Configd::Client->new();
         $cfg_client->session_setup("$$");
-        ssh_set_config( $cfg_client, $hash, $key_type, $pub_key );
+        ssh_set_config( $cfg_client, $hash, $key_type, $pub_key, $rtdomain );
         $cfg_client->commit("User accepted ssh host key for '$host'");
         $cfg_client->session_teardown();
     }
