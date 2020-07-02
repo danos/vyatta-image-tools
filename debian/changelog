@@ -1,3 +1,10 @@
+vyatta-image-tools (5.32) unstable; urgency=medium
+
+  * Allow concurrent removal of hosts from ssh_known_hosts
+  * Modelled copy command in a VRF should not need prior config of ssh-known-hosts
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Thu, 02 Jul 2020 09:34:26 +0100
+
 vyatta-image-tools (5.31) unstable; urgency=medium
 
   [ Charles (Chas) Williams ]
