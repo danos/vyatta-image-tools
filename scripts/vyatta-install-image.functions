@@ -345,7 +345,7 @@ add_console_entry () {
 # $3: config file
 set_encrypted_password () {
   sed -i -e \
-    "/ user $1 {/,/}/s/encrypted-password.*\$/encrypted-password \"$2\"/" $3
+    "/ user $1 {/,/}/s/\w*-password.*\$/encrypted-password \"$2\"/" $3
 }
 
 _dialog_enter_password ()
