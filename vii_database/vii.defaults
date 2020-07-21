@@ -9,7 +9,7 @@
 : ${VII_GRUB_USERNAME:='tmpuser'}    #VC The default grub username installed on the system. These ubac's can also be set in the vyatta config.
 : ${VII_GRUB_PASSWORD:='tmppwd'}    #VC The default grub password if not set.
 
-# Enable a reduced grub.cfg without password or recovery enteries
+# Enable a reduced grub.cfg without password or recovery entries
 : ${VII_GRUB_REDUCED:='No'} #VC This enables a reduced grub layout with only one grub entry per image. The default grub layout uses 4 entries which include password reset options.
 
 # Default config to be copied
