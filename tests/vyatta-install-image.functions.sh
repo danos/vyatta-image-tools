@@ -649,21 +649,10 @@ test_copy_config ()
     mkdir -p "${vyatta_sysconfdir}/config"
     touch "${vyatta_sysconfdir}/config.boot.default"
 
-    # auto install from local file
+    # auto install from file
     rm -rf "${cfg_dir}"
     echo "interfaces { } system { }" > "${SHUNIT_TMPDIR}/vii.config.boot"
     export VII_IMAGE_CONFIG_BOOT="${SHUNIT_TMPDIR}/vii.config.boot"
-    RESPONSE=$(copy_config /${SHUNIT_TMPDIR} < /dev/null)
-    assertTrue "Unexpected return value" "$?"
-    assertTrue "Marker exists in /config" \
-	"[ -f ${cfg_dir}/.vyatta_config ]"
-    assertTrue "config.boot exists in /config" \
-	"[ -f ${cfg_dir}/config.boot ]"
-
-    # auto install from image file
-    rm -rf "${cfg_dir}"
-    echo "interfaces { } system { }" > "${SHUNIT_TMPDIR}/vii.config.boot"
-    export VII_IMAGE_CONFIG_BOOT="image:/vii.config.boot"
     RESPONSE=$(copy_config /${SHUNIT_TMPDIR} < /dev/null)
     assertTrue "Unexpected return value" "$?"
     assertTrue "Marker exists in /config" \

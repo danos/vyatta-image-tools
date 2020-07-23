@@ -1399,7 +1399,7 @@ _get_config_settings () {
 
     if ! is_live_cd_boot ; then
 	becho "Using image's default configuration file"
-	VII_IMAGE_CONFIG_BOOT="image:$vyatta_sysconfdir/config.boot.default"
+	VII_IMAGE_CONFIG_BOOT="$vyatta_sysconfdir/config.boot.default"
 	return
     fi
 
@@ -1465,15 +1465,10 @@ copy_config () {
     # If creating a clean install with new config.
     else
         # Populate contents of fresh install with templates (from new image)
-        run_command cp -aT ${INST_ROOT}${VYATTA_CFG_DIR} $cfg_dir
+        run_command cp -aT ${VYATTA_CFG_DIR} $cfg_dir
 
         echo "Copying ${VII_IMAGE_CONFIG_BOOT}..."
 	    VII_IMAGE_CONFIG_BOOT="${VII_IMAGE_CONFIG_BOOT##file:}"
-
-	    if [[ "${VII_IMAGE_CONFIG_BOOT##image:}" != \
-		"${VII_IMAGE_CONFIG_BOOT}" ]]; then
-		VII_IMAGE_CONFIG_BOOT="${INST_ROOT}${VII_IMAGE_CONFIG_BOOT##image:}"
-	    fi
 
         # Fetch config by URL
 	    if [ "${VII_IMAGE_CONFIG_BOOT%%:*}" != \
