@@ -1,3 +1,11 @@
+vyatta-image-tools (5.33) unstable; urgency=medium
+
+  * Failed to set new admin user account password during live cd image install
+  * Help text for "set system boot-loader" contains spelling mistake
+  * Image upgrade errors if config not saved
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Tue, 28 Jul 2020 09:40:08 +0100
+
 vyatta-image-tools (5.32) unstable; urgency=medium
 
   * Allow concurrent removal of hosts from ssh_known_hosts
