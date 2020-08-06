@@ -4,7 +4,7 @@
 
 # **** License ****
 #
-# Copyright (c) 2019, AT&T Intellectual Property.
+# Copyright (c) 2019-2020, AT&T Intellectual Property.
 # All Rights Reserved.
 #
 # Copyright (c) 2017 by Brocade Communications Systems, Inc.
@@ -50,7 +50,7 @@ sub print_images {
     my $running      = $tree->{'system-image'}->{'running-image'};
 
     die("No images are currently installed on the system\n")
-      if scalar( @{$images} ) == 0;
+      unless $images and scalar( @{$images} );
 
     $msg = sprintf( "The system currently has the following image%s installed:",
         scalar( @{$images} ) == 1 ? "" : "s" )
