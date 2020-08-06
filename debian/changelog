@@ -1,3 +1,9 @@
+vyatta-image-tools (5.34) unstable; urgency=medium
+
+  * "show system image" prints error on uninstalled image
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Thu, 06 Aug 2020 16:36:33 +0100
+
 vyatta-image-tools (5.33) unstable; urgency=medium
 
   * Failed to set new admin user account password during live cd image install
