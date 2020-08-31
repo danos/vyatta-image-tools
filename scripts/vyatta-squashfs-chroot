@@ -1,7 +1,6 @@
 #!/bin/bash
-
 # SPDX-License-Identifier: GPL-2.0-only
-# Copyright (c) 2019, AT&T Intellectual Property.
+# Copyright (c) 2019-2020, AT&T Intellectual Property.
 # All Rights Reserved.
 
 # Running version of Vyatta
@@ -16,9 +15,11 @@ source ${vyatta_sbindir}/vyatta-live-image.functions
 
 # Additonal debug logging
 export INSTALL_LOG=/var/log/vyatta/squash-chroot.log
+declare -i MOUNTED=0
 
 safe_umount ()
 {
+	[[ $MOUNTED -eq 0 ]] && return
 	umount $merged/proc &>/dev/null
 	umount $merged/dev/pts &>/dev/null
 	umount $merged/dev &>/dev/null
@@ -64,6 +65,11 @@ apt_command ()
 	return 0
 }
 
+get_running_image() {
+	PERL5LIB=/opt/vyatta/share/perl5 \
+		perl -MVyatta::Live -E "print get_running_image()"
+}
+
 
 TARGET_IMAGE=${1//[^a-zA-Z0-9\_\.\-]/}
 if [[ -z $TARGET_IMAGE ]]; then
@@ -86,44 +92,57 @@ if [[ -z $ROOTFS_DEV ]]; then
 	fail_exit "Failed to get root device for $TARGET_IMAGE"
 fi
 
-#
-# Setup Overlay
-squashfs=/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/${TARGET_IMAGE}.squashfs
-if [[ ! -f $squashfs ]]; then
-	base="/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/"
-	curr=$(pwd)
-	cd $base
-	eval squashfs=*.squashfs
-	squashfs=${base}${squashfs}
-	cd $curr
+RUNNING_IMAGE=$(get_running_image)
+
+if [[ $RUNNING_IMAGE != $TARGET_IMAGE ]]; then
+	MOUNTED=1
+	#
+	# Setup Overlay
+	squashfs=/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/${TARGET_IMAGE}.squashfs
+	if [[ ! -f $squashfs ]]; then
+		base="/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/"
+		curr=$(pwd)
+		cd $base
+		eval squashfs=*.squashfs
+		squashfs=${base}${squashfs}
+		cd $curr
+	fi
+
+	export merged=/mnt/merged
+	export lower_dir=/mnt/squash
+	upper_dir=/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/persistence/rw
+	work_dir=/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/persistence/work
+
+	mkdir -p $lower_dir
+	mkdir -p $merged
+
+	if ! try_mount $squashfs $lower_dir; then
+		safe_umount
+		logger error "$0: Failed to mount target squashfs"
+		fail_exit "Failed to mount target squashfs"
+	fi
+
+	margs="-t overlay -o noatime,upperdir=${upper_dir},lowerdir=${lower_dir},workdir=${work_dir} overlay $merged"
+	if ! try_mount $margs; then
+		safe_umount
+		logger error "$0: Cannot mount overlay"
+		fail_exit "Cannot mount overlay"
+	fi
+	lecho "Successfully set up overlay dir."
 fi
-
-export merged=/mnt/merged
-export lower_dir=/mnt/squash
-upper_dir=/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/persistence/rw
-work_dir=/lib/live/mount/persistence/${ROOTFS_DEV##*/}/boot/${TARGET_IMAGE}/persistence/work
-
-mkdir -p $lower_dir
-mkdir -p $merged
-
-if ! try_mount $squashfs $lower_dir; then
-	safe_umount
-	logger error "$0: Failed to mount target squashfs"
-	fail_exit "Failed to mount target squashfs"
-fi
-
-margs="-t overlay -o noatime,upperdir=${upper_dir},lowerdir=${lower_dir},workdir=${work_dir} overlay $merged"
-if ! try_mount $margs; then
-	safe_umount
-	logger error "$0: Cannot mount overlay"
-	fail_exit "Cannot mount overlay"
-fi
-lecho "Successfully set up overlay dir."
 
 if [[ $COMMAND == "LIST" ]]; then
-	run_command dpkg --list --root=${merged}
+	declare -a dpkg_cmd=(dpkg --list)
+	if [[ $MOUNTED -eq 1 ]]; then
+		dpkg_cmd[2]="--root=${merged}"
+	fi
+	run_command "${dpkg_cmd[@]}"
 	ret=$?
 elif [[ $COMMAND == "INSTALL" ]]; then
+	if [[ $MOUNTED -eq 0 ]]; then
+		logger error "$0: Can't INSTALL on running image"
+		fail_exit "Can't INSTALL on running image"
+	fi
 	if [[ -z $VYATTA_NEW_PKGS ]]; then
 		safe_umount
 		logger error "$0: No packages specified for install"
