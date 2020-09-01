@@ -1,3 +1,10 @@
+vyatta-image-tools (5.35) unstable; urgency=medium
+
+  [ Nachiketa Prachanda ]
+  * scripts: do not overlay mount on current image
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Tue, 01 Sep 2020 20:36:22 +0100
+
 vyatta-image-tools (5.34) unstable; urgency=medium
 
   * "show system image" prints error on uninstalled image
