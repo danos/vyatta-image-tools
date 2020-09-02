@@ -1,3 +1,10 @@
+vyatta-image-tools (5.25.4) unstable; urgency=medium
+
+  [ Nachiketa Prachanda ]
+  * scripts: do not overlay mount on current image
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Wed, 02 Sep 2020 18:28:55 +0100
+
 vyatta-image-tools (5.25.3) unstable; urgency=medium
 
   * Provide an option to skip host validation for the modelled copy command
