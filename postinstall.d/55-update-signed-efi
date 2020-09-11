@@ -2,6 +2,10 @@
 
 set -e
 
+: ${vyatta_prefix:=/opt/vyatta}
+: ${vyatta_exec_prefix:=$vyatta_prefix}
+: ${vyatta_sbindir:=${vyatta_exec_prefix}/sbin}
+
 source ${vyatta_sbindir}/vyatta-install-image.functions
 
 # We cannot use grub-install from the installer as it does not support
