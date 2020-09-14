@@ -1,3 +1,10 @@
+vyatta-image-tools (5.30.3) unstable; urgency=medium
+
+  [ James Wheatley ]
+  * Set vyatta_sbindir in 55-update-signed-efi
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Mon, 14 Sep 2020 17:59:21 +0100
+
 vyatta-image-tools (5.30.2) unstable; urgency=medium
 
   [ Nachiketa Prachanda ]
