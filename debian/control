@@ -137,6 +137,15 @@ Depends: vyatta-system,
 Description: vyatta-op-add-system-image-v1 module
  Top level add system image command definitions
 
+Package: vyatta-op-add-system-image-routing-instance-v1-yang
+Architecture: all
+Depends: vyatta-system,
+ vyatta-image-tools (>= 5.12),
+ ${misc:Depends},
+ ${yang:Depends}
+Description: vyatta-op-add-system-image-routing-instance-v1 module
+ Add system image routing-instance command yang definitions
+
 Package: vyatta-op-clone-system-v1-yang
 Architecture: all
 Depends: vyatta-system, ${misc:Depends}, ${yang:Depends}

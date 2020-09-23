@@ -1,4 +1,0 @@
-help: Password to use with authentication
-
-run: chvrf "${5}" /opt/vyatta/sbin/vyatta-install-image "${6}" "${8}" "${10}"
-secret: true
