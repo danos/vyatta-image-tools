@@ -34,15 +34,15 @@ sub configure_services {
         }
     }
 
-    my $TMPL = "/tmp/vyatta_postinstall_configure_services.XXXXXXXX";
-    my ( $tmpfh, $tmpfile ) = tempfile( $TMPL, UNLINK => 1 )
+    my $TMPL = "$root/$config_boot.XXXXXXXX";
+    my ( $tmpfh, $tmpfile ) = tempfile( $TMPL, UNLINK => 0 )
       or die "Can't create temp file: $!";
     select $tmpfh;
     $xcp->output(0);
     close $tmpfh;
 
-    my $ret = system("mv $tmpfile $root/$config_boot");
-    die "Unable to update $root/$config_boot\n" if ( $ret >> 8 );
+    rename("$tmpfile", "$root/$config_boot")
+      or "Unable to update $root/$config_boot\n";
 }
 
 sub configure_cmdline {
@@ -50,8 +50,8 @@ sub configure_cmdline {
     my $grub_options = shift;
     exit 1 if ( !defined($grub_cfg) or !defined($grub_options) );
 
-    my $TMPL = "/tmp/vyatta_postinstall_configure.XXXXXXXX";
-    my ( $tmpfh, $tmpfile ) = tempfile( $TMPL, UNLINK => 1 )
+    my $TMPL = "$root/$grub_cfg.XXXXXXXX";
+    my ( $tmpfh, $tmpfile ) = tempfile( $TMPL, UNLINK => 0 )
       or die "Can't create temp file: $!";
 
     open( my $grubfh, '<', "$root/$grub_cfg" )
@@ -67,8 +67,8 @@ sub configure_cmdline {
     close($grubfh);
     close($tmpfh);
 
-    my $ret = system("mv $tmpfile $root/$grub_cfg");
-    die "Unable to overwrite $root/$grub_cfg\n" if ( $ret >> 8 );
+    rename("$tmpfile", "$root/$grub_cfg")
+      or die "Unable to overwrite $root/$grub_cfg\n";
 
     chmod( 0644, "$root/$grub_cfg" );
 }
