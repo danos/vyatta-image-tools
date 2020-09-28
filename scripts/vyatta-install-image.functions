@@ -1602,7 +1602,10 @@ run_post_install_hooks ()
 
     # export our installer variables for postinstall hooks
     for i in $(compgen -A variable | grep -E '^VII_'); do
-        lecho "export $i: ${!i}"
+        # do not display password in logs
+        if [ "$i" != "VII_GRUB_PASSWORD" ]; then
+            lecho "export $i: ${!i}"
+        fi
         export $i
     done
 
