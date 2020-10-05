@@ -1744,6 +1744,26 @@ _check_iso_signature ()
 }
 
 #
+# Obfuscate embedded credentials in the URL
+#
+get_display_url ()
+{
+    local URL=$1
+
+    if [[ "$URL" =~ (.*//)(.*)(@.*) ]]; then
+        credentials='<username>'
+        if [[ "${BASH_REMATCH[2]}" == *:* ]]; then
+            credentials+=':<password>'
+        fi
+        echo -n "${BASH_REMATCH[1]}$credentials${BASH_REMATCH[3]}"
+    else
+        echo -n "$URL"
+    fi
+
+    return 0
+}
+
+#
 # Returns an absolute path to the ISO received from URL on success.
 #
 fetch_iso_by_url ()
@@ -1775,8 +1795,9 @@ fetch_iso_by_url ()
     CLIENT_HDR+=" -HVyatta-Version: $(get_vyatta_version)"
 
     local FILENAME="${TEMP_DIR}/${URL##*/}"
+    local DISPLAY_URL=$(get_display_url "$URL")
 
-    lecho "DEBUG: curl ${CLIENT_HDR} ${AUTH} -f -o ${FILENAME} ${URL}"
+    lecho "DEBUG: curl ${CLIENT_HDR} ${AUTH} -f -o ${FILENAME} ${DISPLAY_URL}"
     curl "${CLIENT_HDR}" ${AUTH} -f -o "${FILENAME}" "${URL}"
     local CURL_ERROR=$?
 
@@ -1789,7 +1810,7 @@ fetch_iso_by_url ()
 	return 1
     fi
 
-    lecho "DEBUG: curl --silent ${CLIENT_HDR} ${AUTH} -f -o ${FILENAME}.asc ${URL}.asc"
+    lecho "DEBUG: curl --silent ${CLIENT_HDR} ${AUTH} -f -o ${FILENAME}.asc ${DISPLAY_URL}.asc"
     curl --silent "${CLIENT_HDR}" ${AUTH} -f -o "${FILENAME}.asc" "${URL}.asc"
     CURL_ERROR=$?
     lecho "DEBUG: CURL_ERROR=${CURL_ERROR}"

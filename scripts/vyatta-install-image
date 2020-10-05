@@ -143,7 +143,7 @@ trap _clean_up EXIT
 lecho "get_vyatta_version $(get_vyatta_version)"
 lecho OPT_CONFIG="${OPT_CONFIG}"
 lecho OPT_ROOT="${OPT_ROOT}"
-lecho OPT_URL="${OPT_URL}"
+lecho OPT_URL="$(get_display_url "${OPT_URL}")"
 lecho OPT_URL_USERNAME="${OPT_URL_USERNAME}"
 lecho OPT_YES="${OPT_YES}"
 
