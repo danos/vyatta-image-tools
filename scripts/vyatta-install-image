@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0-only
 
-# Copyright (c) 2017-2019, AT&T Intellectual Property.
+# Copyright (c) 2017-2020, AT&T Intellectual Property.
 # All Rights Reserved.
 
 # Copyright (c) 2014-2017 by Brocade Communications Systems, Inc.
@@ -144,7 +144,6 @@ lecho "get_vyatta_version $(get_vyatta_version)"
 lecho OPT_CONFIG="${OPT_CONFIG}"
 lecho OPT_ROOT="${OPT_ROOT}"
 lecho OPT_URL="$(get_display_url "${OPT_URL}")"
-lecho OPT_URL_USERNAME="${OPT_URL_USERNAME}"
 lecho OPT_YES="${OPT_YES}"
 
 if [ -n "${OPT_YES}" ] ; then
