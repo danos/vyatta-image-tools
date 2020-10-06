@@ -503,9 +503,9 @@ sub curl {
 
     my ( @args, $stdout, $err );
     if ( $direction_flag == UPLOAD ) {
-        @args = ( "curl", "-K-", "-#", "-T", $from, $to );
+        @args = ( "vyatta-curl-wrapper", "-K-", "-#", "-T", $from, $to );
     } elsif ( $direction_flag == DOWNLOAD ) {
-        @args = ( "curl", "-K-", "-#", "-o", $to, $from );
+        @args = ( "vyatta-curl-wrapper", "-K-", "-#", "-o", $to, $from );
     }
 
     push( @args, "-k" ) if $insecure;

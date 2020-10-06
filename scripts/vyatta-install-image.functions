@@ -1792,8 +1792,8 @@ fetch_iso_by_url ()
     local FILENAME="${TEMP_DIR}/${URL##*/}"
     local DISPLAY_URL=$(get_display_url "$URL")
 
-    lecho "DEBUG: curl ${CLIENT_HDR} ${AUTH} -f -o ${FILENAME} ${DISPLAY_URL}"
-    curl "${CLIENT_HDR}" ${AUTH} -f -o "${FILENAME}" "${URL}"
+    lecho "DEBUG: vyatta-curl-wrapper ${CLIENT_HDR} ${AUTH} -f -o ${FILENAME} ${DISPLAY_URL}"
+    vyatta-curl-wrapper "${CLIENT_HDR}" ${AUTH} -f -o "${FILENAME}" "${URL}"
     local CURL_ERROR=$?
 
     lecho "DEBUG: CURL_ERROR=${CURL_ERROR}"
@@ -1805,8 +1805,8 @@ fetch_iso_by_url ()
 	return 1
     fi
 
-    lecho "DEBUG: curl --silent ${CLIENT_HDR} ${AUTH} -f -o ${FILENAME}.asc ${DISPLAY_URL}.asc"
-    curl --silent "${CLIENT_HDR}" ${AUTH} -f -o "${FILENAME}.asc" "${URL}.asc"
+    lecho "DEBUG: vyatta-curl-wrapper --silent ${CLIENT_HDR} ${AUTH} -f -o ${FILENAME}.asc ${DISPLAY_URL}.asc"
+    vyatta-curl-wrapper --silent "${CLIENT_HDR}" ${AUTH} -f -o "${FILENAME}.asc" "${URL}.asc"
     CURL_ERROR=$?
     lecho "DEBUG: CURL_ERROR=${CURL_ERROR}"
     if [ ${CURL_ERROR} -ne 0 ]; then
