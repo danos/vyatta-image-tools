@@ -1790,15 +1790,21 @@ fetch_iso_by_url ()
     exec 3>&1   # save stdout to fd 3
     exec 1>&2   # redirect stdout to stderr
 
-    local AUTH=${URL_USERNAME:+-u ${URL_USERNAME}:${URL_PASSWORD}}
+    local AUTH_VARS=()
+    local DISPLAY_VARS=()
+    if [ -n "${URL_USERNAME}" ]; then
+       AUTH_VARS=( VYATTA_CURL_USER="${URL_USERNAME}" VYATTA_CURL_PASS="${URL_PASSWORD}" )
+       DISPLAY_VARS=( VYATTA_CURL_USER="<username>" VYATTA_CURL_PASS="<password>" )
+    fi
+
     local CLIENT_HDR='-HVyatta-Client: install-image'
     CLIENT_HDR+=" -HVyatta-Version: $(get_vyatta_version)"
 
     local FILENAME="${TEMP_DIR}/${URL##*/}"
     local DISPLAY_URL=$(get_display_url "$URL")
 
-    lecho "DEBUG: vyatta-curl-wrapper ${CLIENT_HDR} ${AUTH} -f -o ${FILENAME} ${DISPLAY_URL}"
-    vyatta-curl-wrapper "${CLIENT_HDR}" ${AUTH} -f -o "${FILENAME}" "${URL}"
+    lecho "DEBUG: env "${DISPLAY_VARS[@]}" vyatta-curl-wrapper \"${CLIENT_HDR}\" -f -o ${FILENAME} ${DISPLAY_URL}"
+    env "${AUTH_VARS[@]}" vyatta-curl-wrapper "${CLIENT_HDR}" -f -o "${FILENAME}" "${URL}"
     local CURL_ERROR=$?
 
     lecho "DEBUG: CURL_ERROR=${CURL_ERROR}"
@@ -1810,8 +1816,8 @@ fetch_iso_by_url ()
 	return 1
     fi
 
-    lecho "DEBUG: vyatta-curl-wrapper --silent ${CLIENT_HDR} ${AUTH} -f -o ${FILENAME}.asc ${DISPLAY_URL}.asc"
-    vyatta-curl-wrapper --silent "${CLIENT_HDR}" ${AUTH} -f -o "${FILENAME}.asc" "${URL}.asc"
+    lecho "DEBUG: env "${DISPLAY_VARS[@]}" vyatta-curl-wrapper --silent \"${CLIENT_HDR}\" -f -o ${FILENAME}.asc ${DISPLAY_URL}.asc"
+    env "${AUTH_VARS[@]}" vyatta-curl-wrapper --silent "${CLIENT_HDR}" -f -o "${FILENAME}.asc" "${URL}.asc"
     CURL_ERROR=$?
     lecho "DEBUG: CURL_ERROR=${CURL_ERROR}"
     if [ ${CURL_ERROR} -ne 0 ]; then
