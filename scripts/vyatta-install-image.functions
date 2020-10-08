@@ -107,7 +107,7 @@ grub_efi_modules="all_video
         zfsinfo
 "
 
-# echo to log. uses INSTALL_LOG if set.
+# echo to log. uses INSTALL_LOG if set (no log if set to empty), else sets this.
 # lecho "LOG MESSAGE"
 lecho ()
 {
@@ -115,7 +115,12 @@ lecho ()
   local log_msg=( "$@" )
   log_msg=( ${log_msg[@]//-n/} ) # Trim any no newline operands
   [ -z $log_msg ] && return
-  local log=${INSTALL_LOG-"/tmp/install-$$.log"}
+  if [ ! -v INSTALL_LOG ]; then
+    INSTALL_LOG=$(mktemp /tmp/install-XXXXXXXX.log) \
+        || fail_exit 'lecho: failed to create install log'
+    export INSTALL_LOG
+  fi
+  local log=$INSTALL_LOG
   if [ -n "$log" ]; then
     if [[ $func == "becho" ]]; then
       echo -e "[${log_msg[0]}]: ${log_msg[@]:1}" >>$log
