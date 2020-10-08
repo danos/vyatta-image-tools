@@ -99,7 +99,11 @@ fi
 : "${INSTALL_SOURCE_DIR:="$(get_live_rootfs_path)"}"
 
 # export INSTALL_LOG to let subshells, postinstalls, etc. write to it too
-skip_if_chrooted && export INSTALL_LOG="/tmp/install-$$.log"
+if skip_if_chrooted; then
+    INSTALL_LOG=$(mktemp /tmp/install-XXXXXXXX.log) \
+        || fail_exit 'Failed to create install log'
+    export INSTALL_LOG
+fi
 lecho "Setting the install log to: $INSTALL_LOG"
 # return value of prepare_install_root(), this is the root where we install
 # the vyatta image to.
