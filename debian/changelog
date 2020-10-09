@@ -1,3 +1,12 @@
+vyatta-image-tools (5.38) unstable; urgency=medium
+
+  * Do not show Grub password in installer logs
+  * Do not show sensitive information in URL displayed in installer logs
+  * Revert to explicit use of vyatta-curl-wrapper
+  * Do not show sensitive information in argument displayed in installer logs
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Fri, 09 Oct 2020 11:56:25 +0100
+
 vyatta-image-tools (5.37) unstable; urgency=medium
 
   [ Nicholas Brown ]
