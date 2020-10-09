@@ -1,6 +1,6 @@
 # **** License ****
 #
-# Copyright (C) 2017-2019 AT&T Intellectual Property.
+# Copyright (C) 2017-2020 AT&T Intellectual Property.
 # All Rights Reserved.
 #
 # Copyright (c) 2014-2017, Brocade Communications Systems, Inc.
@@ -18,7 +18,7 @@ package Vyatta::Live;
 use strict;
 use warnings;
 
-use File::Temp qw/ :mktemp /;
+use File::Temp qw/ :mktemp tempdir /;
 use File::Copy;
 use Sys::Syslog;
 use Template;
@@ -292,18 +292,19 @@ sub get_image_version {
     return get_cached_version($infofile)
       if ( -e $infofile );
 
-    my $squash_mount_path = "/tmp/squash_mount";
+    my $TEMPLATE     = "/tmp/squash_mount.XXXXXXXX";
     my @squash_files = glob("$live_image_root/boot/$image_name/*.squashfs");
     foreach my $squash_file (@squash_files) {
         next unless ( -e $squash_file );
 
-        system("mkdir $squash_mount_path");
+        my $squash_mount_path = tempdir( $TEMPLATE, CLEANUP => 1 )
+          or die "Can't create temp dir for squash mount: $!";
+
         system("mount -o loop,ro -t squashfs $squash_file $squash_mount_path");
 
         my $vers = get_version_from_dpkg($squash_mount_path);
 
         system("umount $squash_mount_path");
-        system("rmdir $squash_mount_path");
 
         # cache the version we found in the image to avoid lookup later.
         cache_version( $infofile, $vers );
