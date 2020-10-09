@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # SPDX-License-Identifier: GPL-2.0-only
 
-# Copyright (c) 2019, AT&T Intellectual Property.
+# Copyright (c) 2019-2020, AT&T Intellectual Property.
 # All Rights Reserved.
 
 # Copyright (c) 2015-2017 by Brocade Communications Systems, Inc.
@@ -11,6 +11,7 @@ use strict;
 use warnings;
 use lib "/opt/vyatta/share/perl5/";
 use XorpConfigParser;
+use File::Temp qw(tempfile);
 
 my $root        = "";
 my $config_boot = "/config/config.boot";
@@ -33,8 +34,9 @@ sub configure_services {
         }
     }
 
-    my $tmpfile = "/tmp/vyatta_postinstall_configure.$$";
-    open( my $tmpfh, '>', $tmpfile ) or exit 1;
+    my $TMPL = "/tmp/vyatta_postinstall_configure_services.XXXXXXXX";
+    my ( $tmpfh, $tmpfile ) = tempfile( $TMPL, UNLINK => 1 )
+      or die "Can't create temp file: $!";
     select $tmpfh;
     $xcp->output(0);
     close $tmpfh;
@@ -48,10 +50,10 @@ sub configure_cmdline {
     my $grub_options = shift;
     exit 1 if ( !defined($grub_cfg) or !defined($grub_options) );
 
-    my $tmpfile = "/tmp/vyatta_postinstall_configure.$$";
+    my $TMPL = "/tmp/vyatta_postinstall_configure.XXXXXXXX";
+    my ( $tmpfh, $tmpfile ) = tempfile( $TMPL, UNLINK => 1 )
+      or die "Can't create temp file: $!";
 
-    open( my $tmpfh, '>', $tmpfile )
-      or die "Can't open: $tmpfile\n";
     open( my $grubfh, '<', "$root/$grub_cfg" )
       or die "Can't open: $root/$grub_cfg";
 
