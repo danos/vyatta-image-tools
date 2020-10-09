@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # SPDX-License-Identifier: GPL-2.0-only
 
-# Copyright (c) 2019, AT&T Intellectual Property.
+# Copyright (c) 2019-2020, AT&T Intellectual Property.
 # All Rights Reserved.
 
 # Copyright (c) 2017 by Brocade Communications Systems, Inc.
@@ -12,6 +12,7 @@ use warnings;
 use lib "/opt/vyatta/share/perl5/";
 use Getopt::Long;
 use XorpConfigParser;
+use File::Temp qw(tempfile);
 
 my $config_boot = "/config/config.boot";
 my $grub_cfg    = "/boot/grub/grub.cfg";
@@ -62,8 +63,9 @@ sub configure_console {
     create_if_not_exists( $xcp,
         [ 'system', 'console', "serial-boot-console", $console ] );
 
-    my $tmpfile = "/tmp/vyatta_postinstall_configure.$$";
-    open( my $tmpfh, '>', $tmpfile ) or exit 1;
+    my $TMPL = "/tmp/vyatta_postinstall_setup_console.XXXXXXXX";
+    my ( $tmpfh, $tmpfile ) = tempfile( $TMPL, UNLINK => 1 )
+      or die "Can't create temp file: $!";
     select $tmpfh;
     $xcp->output(0);
     close $tmpfh;
