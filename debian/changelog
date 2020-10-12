@@ -1,3 +1,12 @@
+vyatta-image-tools (5.39) unstable; urgency=medium
+
+  * Improve temporary file handling for postinstall
+  * Improve temporary file handling for installer log
+  * Improve temporary directory handling when getting image version
+  * Pass arguments as an array for system calls when getting image version
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Mon, 12 Oct 2020 13:10:38 +0100
+
 vyatta-image-tools (5.38) unstable; urgency=medium
 
   * Do not show Grub password in installer logs
