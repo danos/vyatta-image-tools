@@ -300,11 +300,12 @@ sub get_image_version {
         my $squash_mount_path = tempdir( $TEMPLATE, CLEANUP => 1 )
           or die "Can't create temp dir for squash mount: $!";
 
-        system("mount -o loop,ro -t squashfs $squash_file $squash_mount_path");
+        system( "mount", "-o", "loop,ro", "-t", "squashfs", $squash_file,
+            $squash_mount_path );
 
         my $vers = get_version_from_dpkg($squash_mount_path);
 
-        system("umount $squash_mount_path");
+        system( "umount", $squash_mount_path );
 
         # cache the version we found in the image to avoid lookup later.
         cache_version( $infofile, $vers );
