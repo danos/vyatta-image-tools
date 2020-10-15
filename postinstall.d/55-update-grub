@@ -61,6 +61,11 @@ function update_console ()
     _update_grub_env ${console_params[0]} ${console_params[1]}
 }
 
-
-update_console
+case "$1" in
+configure)
+	;;
+run)
+	update_console
+	;;
+esac
 exit 0
