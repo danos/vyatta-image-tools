@@ -54,7 +54,7 @@ function update_console ()
 {
     # Get the current image name
     output=$(cat /proc/cmdline)
-    output=$(echo $output | grep -o 'BOOT_IMAGE=[a-zA-Z0-9/-.]*')
+    output=$(echo $output | grep -o 'BOOT_IMAGE=[a-zA-Z0-9/-\.]*')
     output=${output:11}
     boot_image=$(echo $output | cut -d'/' -f3)
     console_params=( $(_get_console $grub_file $boot_image) )
