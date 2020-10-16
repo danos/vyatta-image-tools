@@ -38,7 +38,6 @@ postinstalld_SCRIPTS = postinstall.d/50-example
 postinstalld_SCRIPTS += postinstall.d/50-vyatta-misc
 postinstalld_SCRIPTS += postinstall.d/55-update-grub
 postinstalld_SCRIPTS += postinstall.d/55-update-signed-efi
-postinstalld_SCRIPTS += postinstall.d/70-vyatta-xen
 postinstalld_SCRIPTS += postinstall.d/80-create-raid-config
 postinstalld_SCRIPTS += postinstall.d/90-configure
 postinstalld_SCRIPTS += postinstall.d/93-machine-id
