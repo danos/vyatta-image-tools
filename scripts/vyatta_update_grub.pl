@@ -24,6 +24,7 @@ use lib "/opt/vyatta/share/perl5";
 
 use Vyatta::Configd;
 use Vyatta::Live;
+use File::Slurp;
 use File::Temp qw(tempfile);
 use Getopt::Long;
 use XorpConfigParser;
@@ -90,7 +91,7 @@ sub vga_is_present {
 }
 
 sub build_grub_cmd {
-    my ( $reduced, $index, $grub_users, $gcfg, $gtemplate, $pt_cmd, @images ) =
+    my ( $reduced, $index, $grub_users, $gcfg, $gtemplate, $pt_cmd, $dhcp, $cloud_init, @images ) =
       (@_);
     if ( $index eq "" ) {
         die __FILE__ . ": Missing input: \$index.\n";
@@ -119,6 +120,8 @@ sub build_grub_cmd {
     $global->{'date'}    = localtime();
     $global->{'default'} = $index;
     $global->{'pt-cmd'}  = $pt_cmd;
+    $global->{'dhcp'}  = $dhcp;
+    $global->{'cloud-init'}  = $cloud_init;
 
     # If no VGA in system, 1st serial port automatically becomes the console
     $global->{'append-serial'} = vga_is_present() ? 'yes' : 'no';
@@ -178,6 +181,26 @@ sub build_onie_cmd {
       or die __FILE__ . ": Could not rename new Grub ONIE configuration\n";
 }
 
+# The image may have been booted with ip=dhcp or cloud-init.
+# These parameters should be preserved across reboots.
+#
+sub get_kernel_bootparams()
+{
+    my $kernel_cmdline = read_file( "/proc/cmdline" );
+
+    my $dhcp = "";
+    if ( $kernel_cmdline =~ /ip=dhcp/ ) {
+        $dhcp = "ip=dhcp";
+    }
+
+    my $cloud_init = "";
+    if ( $kernel_cmdline =~ /cloud-init/ ) {
+        $cloud_init = "cloud-init";
+    }
+
+    return $dhcp, $cloud_init;
+}
+
 sub generate_grub_cmd {
     my ($image) = (@_);
 
@@ -201,6 +224,8 @@ sub generate_grub_cmd {
         push( @images, $image );
     }
 
+    my ($dhcp, $cloud_init) = get_kernel_bootparams();
+
     my $pt_cmd = $pt_enable;
     my $iommu  = $configd->tree_get_full_hash("system");
     $iommu = $iommu->{'system'}->{'iommu'};
@@ -211,7 +236,7 @@ sub generate_grub_cmd {
 
     # Build a working grub.cfg with all images found...
     build_grub_cmd( $reduced, $index, $grub_users, $grub_cfg,
-        $grub_template, $pt_cmd, @images );
+        $grub_template, $pt_cmd, $dhcp, $cloud_init, @images );
 
     # Update onie
     if ( is_onie_system() ) {
@@ -359,8 +384,11 @@ if ( defined($build_grub) ) {
                 ]
             };
         }
+
+	my ($dhcp, $cloud_init) = get_kernel_bootparams();
+
         build_grub_cmd( $reduced, $index, $grub_users,
-            $grub_cfg, $template_cfg, $pt_enable, @images );
+            $grub_cfg, $template_cfg, $pt_enable, $dhcp, $cloud_init, @images );
         exit(0);
     }
     else {
