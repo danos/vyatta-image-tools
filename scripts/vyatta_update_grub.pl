@@ -24,6 +24,7 @@ use lib "/opt/vyatta/share/perl5";
 
 use Vyatta::Configd;
 use Vyatta::Live;
+use File::Temp qw(tempfile);
 use Getopt::Long;
 use XorpConfigParser;
 
@@ -127,16 +128,19 @@ sub build_grub_cmd {
         $global->{'grub-users'} = $grub_users;
     }
 
+    my $TMPL = "$gcfg.XXXXXXXX";
+    my ( $tmpfh, $gcfg_new ) = tempfile( $TMPL,  UNLINK => 0 )
+      or die "Can't create temp file: $!";
     open( my $fh, '<', $gtemplate );
     my $template = Template->new();
     my %tree_in = ( 'images' => \@out, 'global' => $global );
-    $template->process( $fh, \%tree_in, $gcfg )
+    $template->process( $fh, \%tree_in, $tmpfh )
       or die __FILE__ . ": Could not fill out Grub template\n";
     close($fh);
+    close($tmpfh);
 
-    # Try and clean up a bit...
-    system("cat -s $gcfg > /tmp/.grub_tmp");
-    rename "/tmp/.grub_tmp", "$gcfg";
+    rename( $gcfg_new, $gcfg )
+      or die __FILE__ . ": Could not rename new Grub configuration\n";
 }
 
 sub build_onie_cmd {
@@ -159,16 +163,19 @@ sub build_onie_cmd {
 
     $global->{'efi'} = ( -d "/sys/firmware/efi" ) ? "yes" : "no";
 
+    my $TMPL = "$c.XXXXXXXX";
+    my ( $tmpfh, $c_new ) = tempfile( $TMPL, UNLINK => 0 )
+      or die "Can't create temp file: $!";
     open( my $fh, '<', $t );
     my $template = Template->new();
     my %tree_in = ( 'global' => $global );
-    $template->process( $fh, \%tree_in, $c )
+    $template->process( $fh, \%tree_in, $tmpfh )
       or die __FILE__ . ": Could not fill out Grub ONIE template\n";
     close($fh);
+    close($tmpfh);
 
-    # Try and clean up a bit...
-    system("cat -s $c > /tmp/.grub_tmp");
-    rename "/tmp/.grub_tmp", "$c";
+    rename( $c_new, $c )
+      or die __FILE__ . ": Could not rename new Grub ONIE configuration\n";
 }
 
 sub generate_grub_cmd {
