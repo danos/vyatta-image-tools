@@ -1,3 +1,16 @@
+vyatta-image-tools (5.25.6) unstable; urgency=medium
+
+  * Do not show Grub password in installer logs
+  * Do not show sensitive information in URL displayed in installer logs
+  * Revert to explicit use of vyatta-curl-wrapper
+  * Do not show sensitive information in argument displayed in installer logs
+  * Improve temporary file handling for postinstall
+  * Improve temporary file handling for installer log
+  * Improve temporary directory handling when getting image version
+  * Pass arguments as an array for system calls when getting image version
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Mon, 19 Oct 2020 14:15:58 +0100
+
 vyatta-image-tools (5.25.5) unstable; urgency=medium
 
   [ James Wheatley ]
