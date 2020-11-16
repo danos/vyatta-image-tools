@@ -86,9 +86,11 @@ sub parse_grub_cfg {
     my @entries  = ();
     my $in_entry = 0;
     my $idx      = 0;
+    my $running_boot_img;
     my $curver;
 
     $running_boot_cmd =~ s/BOOT_IMAGE=//;
+    ($running_boot_img) = split( /\s+/, $running_boot_cmd, 2 );
     foreach (@cfg_data) {
         if ($in_entry) {
             if (/^}/) {
@@ -144,7 +146,7 @@ sub parse_grub_cfg {
                 else {
                     $ehash{'recovery'} = 0;
                 }
-                if (/$running_boot_cmd/) {
+                if (/$running_boot_img\b/) {
                     $ehash{'running_vers'} = 1;
                 }
                 else {
