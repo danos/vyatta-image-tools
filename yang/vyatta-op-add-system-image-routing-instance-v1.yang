@@ -23,7 +23,7 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 		 Web: www.att.com";
 
 	description
-		"Copyright (c) 2020, AT&T Intellectual Property.
+		"Copyright (c) 2020-2021, AT&T Intellectual Property.
 		 All rights reserved.
 
 		Redistribution and use in source and binary forms, with or without
@@ -56,7 +56,11 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 		SPDX-License-Identifier: BSD-3-Clause
 
 		Defines the 'routing instance' level under 'add system image' for operational CLI";
-	
+
+	revision 2021-02-10 {
+		description "Add username/password options to match non-routing-instance command.
+			Obsolete the user-id/passphrase options.";
+	}
 	revision 2020-09-15 {
 		description "Initial version";
 	}
@@ -79,7 +83,21 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 						}
 					}
 
+				opd:option username {
+					opd:help "Username for authentication";
+					type string;
+
+					opd:option password {
+						opd:help "Password to use with authentication";
+						opd:on-enter 'chvrf "${5}" /opt/vyatta/sbin/vyatta-install-image "${6}" "${8}" "${10}"';
+						opd:privileged true;
+						opd:secret true;
+						type string;
+					}
+				}
+
 				opd:option user-id {
+					status obsolete;
 					opd:help "Username for authentication";
 					type string;
 
