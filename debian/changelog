@@ -1,3 +1,10 @@
+vyatta-image-tools (5.43) unstable; urgency=medium
+
+  [ Duncan Eastoe ]
+  * yang: username/password rt inst. add image args
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Wed, 17 Feb 2021 14:17:24 +0000
+
 vyatta-image-tools (5.42) unstable; urgency=medium
 
   * "running image" not always shown in output from "show system image"
