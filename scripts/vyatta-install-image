@@ -158,8 +158,9 @@ if [ -n "${OPT_YES}" ] ; then
 fi
 
 # Check if this is an ONIE environment
-is_onie_boot && export ONIE_BOOT='true'
-[ -n "$ONIE_BOOT" ] && lecho "Found ONIE environment"
+unset ONIE_BOOT
+is_onie_boot && export ONIE_BOOT='true' || export ONIE_BOOT='false'
+[ "${ONIE_BOOT-}" = 'true' ] && lecho "Found ONIE environment"
 
 # Download, check and/or mount installation source, If vit_chrooted is set,
 # we have been run recursively which means installation source has

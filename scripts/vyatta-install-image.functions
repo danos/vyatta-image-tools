@@ -491,6 +491,9 @@ is_cd_device ()
 # Need to simulate livecd install when doing onie boot
 is_onie_boot ()
 {
+    if [ -n "$ONIE_BOOT" ]; then
+        [ "$ONIE_BOOT" = 'true' ] && return 0 || return 1
+    fi
     if lsblk_exclude_floppy --noheadings --output=PARTLABEL | \
 	    grep -q 'ONIE-BOOT' && \
 	    grep -q --invert-match 'vyatta-union' /proc/cmdline; then
