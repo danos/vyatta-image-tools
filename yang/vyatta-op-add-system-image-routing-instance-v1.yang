@@ -57,6 +57,9 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 
 		Defines the 'routing instance' level under 'add system image' for operational CLI";
 
+	revision 2021-03-31 {
+		description "Allow user to install images without setting image as the default boot.";
+	}
 	revision 2021-02-10 {
 		description "Add username/password options to match non-routing-instance command.
 			Obsolete the user-id/passphrase options.";
@@ -74,7 +77,7 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 
 			opd:argument image-url {
 				opd:help "URL of system image file to be installed";
-				opd:on-enter 'chvrf "${5}" /opt/vyatta/sbin/vyatta-install-image "${6}"';
+				opd:on-enter 'chvrf "${5}" vyatta-install-image "${6}"';
 				opd:privileged true;
 				type string {
 						opd:pattern-help '<http|https|ftp|tftp|scp url>';
@@ -83,13 +86,33 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 						}
 					}
 
+				opd:command defer-boot {
+					opd:help "Do not use the new image as the default boot";
+					opd:on-enter 'vyatta-install-image --defer-boot "${6}"';
+					opd:privileged true;
+
+					opd:option username {
+						opd:help "Username for authentication";
+						type string;
+
+						opd:option password {
+							opd:help "Password to use with authentication";
+							opd:on-enter 'chvrf "${5}" vyatta-install-image --defer-boot "${6}" "${9}" "${11}"';
+							opd:privileged true;
+							opd:secret true;
+							type string;
+						}
+					}
+				}
+
+
 				opd:option username {
 					opd:help "Username for authentication";
 					type string;
 
 					opd:option password {
 						opd:help "Password to use with authentication";
-						opd:on-enter 'chvrf "${5}" /opt/vyatta/sbin/vyatta-install-image "${6}" "${8}" "${10}"';
+						opd:on-enter 'chvrf "${5}" vyatta-install-image "${6}" "${8}" "${10}"';
 						opd:privileged true;
 						opd:secret true;
 						type string;
@@ -103,7 +126,7 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 
 					opd:option passphrase {
 						opd:help "Password to use with authentication";
-						opd:on-enter 'chvrf "${5}" /opt/vyatta/sbin/vyatta-install-image "${6}" "${8}" "${10}"';
+						opd:on-enter 'chvrf "${5}" vyatta-install-image "${6}" "${8}" "${10}"';
 						opd:privileged true;
 						opd:secret true;
 						type string;

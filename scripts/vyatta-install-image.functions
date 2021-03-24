@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0-only
 
-# Copyright (c) 2018-2020, AT&T Intellectual Property.
+# Copyright (c) 2018-2021, AT&T Intellectual Property.
 # All Rights Reserved.
 
 # Copyright (c) 2014-2017 by Brocade Communications Systems, Inc.
@@ -1561,9 +1561,11 @@ run_post_install ()
             --generate-grub="${IMAGE_NAME//$'\n'/}"
 
         # Set default boot index
-        run_command \
-            ${vyatta_sbindir}/vyatta_update_grub.pl \
-                --set-default-boot-index="${IMAGE_NAME//$'\n'/}"
+	if [[ $OPT_DEFER_BOOT != 1 ]]; then
+            run_command \
+                ${vyatta_sbindir}/vyatta_update_grub.pl \
+                    --set-default-boot-index="${IMAGE_NAME//$'\n'/}"
+        fi
     elif [[ $VII_ENABLE_GRUB_PASSWORD =~ ^[Nn][Oo]?$ ]]; then
         params="$tmp,"
         params+="$index,"
