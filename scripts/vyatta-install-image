@@ -47,7 +47,7 @@ if [ -f "${vyatta_sysconfdir}/install-image/vii.config" ]; then
 fi
 
 OPTS=$(getopt --name $(basename $0) \
-    --options "c:r:y:d" --longoptions "config:,root:,yes,defer-boot" -- "$@") || exit $?
+    --options "c:r:yd" --longoptions "config:,root:,yes,defer-boot" -- "$@") || exit $?
 
 eval set -- ${OPTS}
 
