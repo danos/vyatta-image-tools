@@ -32,6 +32,7 @@ sbin_SCRIPTS += scripts/vyatta-multiple-partition.functions
 sbin_SCRIPTS += scripts/vyatta_update_grub.pl
 sbin_SCRIPTS += scripts/vyatta-hotfix
 sbin_SCRIPTS += scripts/vyatta-squashfs-chroot
+sbin_SCRIPTS += scripts/vyatta-grub-editenv
 
 postinstallddir = $(datadir)/postinstall.d
 postinstalld_SCRIPTS = postinstall.d/50-example

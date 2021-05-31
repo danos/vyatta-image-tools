@@ -1,0 +1,103 @@
+#!/usr/bin/perl
+#
+# **** License ****
+#
+# Copyright (c) 2021, AT&T Intellectual Property.
+# All Rights Reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# **** End License ****
+
+use strict;
+use warnings;
+use lib '/opt/vyatta/share/perl5';
+
+use Vyatta::Live;
+use Getopt::Long;
+use IPC::Run3;
+
+my $VYATTA_GRUB_ENV  = 'vyatta.grubenv';
+my $GRUB_EDITENV_CMD = '/usr/bin/grub-editenv';
+my ( $action, $global, $image, $running );
+
+sub grub_editenv {
+    my ( $img_name, $editcmd, @vars ) = @_;
+
+    my $cmd = [$GRUB_EDITENV_CMD];
+    my ( $s_out, $s_err );
+    my $envfile = q{-};
+
+    if ($img_name) {
+        my $img_root = get_live_image_root() . "/boot/$img_name";
+        die __FILE__ . ": No image directory exists for $img_name\n"
+          if not -d $img_root;
+        $envfile = "${img_root}/${VYATTA_GRUB_ENV}";
+    }
+    push( @{$cmd}, $envfile, $editcmd, @vars );
+    run3( $cmd, \undef, \$s_out, \$s_err );
+    die( __FILE__,
+        ': Failed command: ',
+        join( q{ }, @{$cmd} ),
+        "\n",
+        $s_out ? "STDOUT:$s_out\n" : q{},
+        $s_err ? "STDERR:$s_err\n" : q{}
+    ) if $? != 0;
+    return $s_out;
+}
+
+sub check_args {
+    die __FILE__, ": No action specified\n" if not defined($action);
+    if ( $action eq 'list' ) {
+        die __FILE__,
+          ": Too many argument for grub-editenv $action: expected 0 got ",
+          scalar @ARGV, "\n"
+          if @ARGV;
+    } elsif ( $action eq 'set' || $action eq 'unset' ) {
+        die __FILE__, ": no argument for grub-editenv $action\n" if not @ARGV;
+    } else {
+        die __FILE__, ": Invalid command $action for grub-editenv\n";
+    }
+
+    my $target = 0;
+    for my $img ( $global, $running, $image ) {
+	if ($img) {
+		$target++;
+	}
+    }
+    die __FILE__,
+      ": Invalid argument: must specify exactly one of global, running, or image\n"
+      if $target != 1;
+    foreach my $arg (@ARGV) {
+        my ( $name, $val ) = split( /=/s, $arg, 2 );
+        if ( $action eq 'set' ) {
+            die __FILE__, ": Invalid $action argument $name"
+              if not defined($val);
+        } elsif ( $action eq 'unset' ) {
+            die __FILE__, ": Invalid $action argument $name" if defined($val);
+        }
+    }
+    return;
+}
+
+GetOptions(
+    "action=s" => \$action,
+    "global"   => \$global,
+    "image=s"  => \$image,
+    "running"  => \$running
+);
+
+check_args();
+if ($global) {
+    $image = undef;
+} elsif ($running) {
+    $image = get_running_image();
+}
+
+print "running grub-edit-env on ", $image ? $image : "No Image";
+my $out = grub_editenv( $image, $action, @ARGV );
+if ($out) {
+    print "$out";
+}
+exit 0;
+
