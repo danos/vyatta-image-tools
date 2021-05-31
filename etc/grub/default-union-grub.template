@@ -38,7 +38,15 @@ menuentry "Vyatta [% cfg.item('image-name') %] (Configured console)" --unrestric
             set console_param="$boot_console,$serial_speed"
         fi
     fi
-    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 [% global.item('pt-cmd') %]vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param [% global.item('dhcp') %] [% global.item('cloud-init') %]
+    set crashkernel_arg=""
+    if [ -s /boot/[% cfg.item('image-name') %]/vyatta.grubenv ]; then
+        crashkernel_mem=""
+        load_env --file /boot/[% cfg.item('image-name') %]/vyatta.grubenv crashkernel_mem
+        if [ "$crashkernel_mem" != "" ]; then
+            set crashkernel_arg="crashkernel=$crashkernel_mem"
+        fi
+    fi
+    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 [% global.item('pt-cmd') %]vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param $crashkernel_arg [% global.item('dhcp') %] [% global.item('cloud-init') %]
     initrd /boot/[% cfg.item('image-name') %]/initrd.img
 }
 [% UNLESS global.item('reduced') == 1 %]
@@ -50,7 +58,15 @@ menuentry "Vyatta [% cfg.item('image-name') %] (Configured console)" {
             set console_param="$boot_console,$serial_speed"
         fi
     fi
-    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 [% global.item('pt-cmd') %]vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param [% global.item('dhcp') %] [% global.item('cloud-init') %]
+    set crashkernel_arg=""
+    if [ -s /boot/[% cfg.item('image-name') %]/vyatta.grubenv ]; then
+        crashkernel_mem=""
+        load_env --file /boot/[% cfg.item('image-name') %]/vyatta.grubenv crashkernel_mem
+        if [ "$crashkernel_mem" != "" ]; then
+            set crashkernel_arg="crashkernel=$crashkernel_mem"
+        fi
+    fi
+    linux /boot/[% cfg.item('image-name') %]/vmlinuz boot=live quiet systemd.show_status=1 systemd.unified_cgroup_hierarchy=1 nofastboot net.ifnames=1 [% global.item('pt-cmd') %]vyatta-union=/boot/[% cfg.item('image-name') %] console=$console_param $crashkernel_arg [% global.item('dhcp') %] [% global.item('cloud-init') %]
     initrd /boot/[% cfg.item('image-name') %]/initrd.img
 }
 
