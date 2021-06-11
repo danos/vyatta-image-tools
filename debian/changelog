@@ -1,3 +1,14 @@
+vyatta-image-tools (5.46) unstable; urgency=medium
+
+  [ Nicholas Brown ]
+  * 'y' installer option does not need an argument
+
+  [ Nachiketa Prachanda ]
+  * grub: per image env file for crashkernel cmdline
+  * script: add vyatta-grub-editenv script
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Fri, 11 Jun 2021 10:07:08 +0100
+
 vyatta-image-tools (5.45) unstable; urgency=medium
 
   [ Charles (Chas) Williams ]
