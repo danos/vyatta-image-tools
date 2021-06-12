@@ -188,6 +188,19 @@ if [[ -n "${OPT_URL}" && -z "${vit_chrooted}" ]] ; then
         $CD_SQUASH_ROOT"; then
         fail_exit 'Failed to mount the squashfs image.'
     fi
+
+    if ! check_binary_signatures "${CD_SQUASH_ROOT}"; then
+        echo "Warning: secure boot is enabled, but not all signed binaries "
+        echo "could be verified for the image to be installed. Do not proceed "
+        echo "unless the risk of not being able to boot shim, grub or kernel "
+        echo "after installation has been mitigated against."
+        echo -n "Continue with installation? (Yes/No) [No]: "
+        response=$(get_response "No" "Yes No Y N")
+        if [[ "$response" != Y* ]]; then
+            fail_exit "Quitting installation"
+        fi
+    fi
+
     # Now execute the installer from the downloaded image. But first change
     # the vyatta_prefix to ensure sources from the downloaded image get used.
     export vyatta_prefix=${CD_SQUASH_ROOT}${vyatta_prefix}

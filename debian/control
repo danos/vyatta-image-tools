@@ -28,6 +28,7 @@ Depends:
  dpkg-dev,
  dosfstools,
  efibootmgr,
+ efitools,
  file,
  gnupg,
  grub-efi-amd64-bin,

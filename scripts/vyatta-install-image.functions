@@ -2499,3 +2499,82 @@ is_opt_vyatta_config () {
     # is not custom config
     return 1
 }
+
+# Check whether the image will boot with secure boot enabled. The signed
+# binaries would ideally be checked with 'sbverify --cert <cert.pem> <bin>',
+# where 'openssl x509 -inform der -in <cert.der> -outform pem -out <cert.pem>'
+# for all certs in the signature list. However, this check fails for expired
+# certs, whereas secure boot does not mind. So just check for the subject (DN),
+# which is sufficient unless tampered with for shim, grub & kernel to boot.
+check_binary_signatures ()
+{
+    local ROOT=$1
+    local certs_dir
+    local certs_subj=()
+    local sbf=(/sys/firmware/efi/efivars/SecureBoot-*)
+
+    # No check needed if not EFI or secure boot disabled
+
+    if [ ! -f "${sbf[0]}" ] ||
+       [ "$(hexdump "${sbf[0]}" | awk '{print $4}')" -ne 1 ]; then
+        return 0
+    fi
+
+    # Get the subject (DN) from the EFI signature list
+
+    certs_dir=$(mktemp -q -d -t installer-sig-certs-XXXXXXXX) \
+        || fail_exit 'Signing check, failed to create temporary dir'
+    cd "$certs_dir" || fail_exit "Signing check, cd $certs_dir failed"
+
+    efi-readvar -v db -o db &>/dev/null
+    sig-list-to-certs db cert &>/dev/null
+
+    for cert in cert*der; do
+       if [ -f "$cert" ]; then
+           certs_subj+=("$(openssl x509 -inform der -in "$cert" -noout \
+               -subject -nameopt compat | sed -n 's/^subject=//ip')")
+       fi
+    done
+
+    cd - &>/dev/null || fail_exit "Signing check, cd - failed"
+    rm -rf "$certs_dir"
+
+    if [ "${#certs_subj[@]}" -eq 0 ]; then
+            becho "Signing check, failed to get signature list"
+            return 1
+    fi
+
+    # Check the signed binaries for shim, grub & kernel
+
+    binaries=(
+        "$ROOT/usr/lib/shim/shimx64.efi.signed"
+        "$ROOT/usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed"
+        "$ROOT/boot/vmlinuz"
+    )
+
+    for bin in "${binaries[@]}"; do
+        if [ ! -f "$bin" ]; then
+            becho Signing check, file not found: "$bin"
+            return 1
+        fi
+        sb_subj=$(sbverify --list "$bin" 2>/dev/null | \
+            sed -n 's/^.*subject: //ip')
+        if [ "$sb_subj" == "" ]; then
+            becho Signing check, failed to get signature for "$bin"
+            return 1
+        fi
+        match=0
+        for subj in "${certs_subj[@]}"; do
+            if [ "$subj" == "$sb_subj" ]; then
+                match=1
+                break
+            fi
+        done
+        if [ "$match" -eq 0 ]; then
+            becho Signing check, no match in signature list for "$bin"
+            return 1
+        fi
+    done
+
+    return 0
+}
