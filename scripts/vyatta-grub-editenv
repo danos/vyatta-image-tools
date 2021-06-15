@@ -94,7 +94,6 @@ if ($global) {
     $image = get_running_image();
 }
 
-print "running grub-edit-env on ", $image ? $image : "No Image";
 my $out = grub_editenv( $image, $action, @ARGV );
 if ($out) {
     print "$out";
