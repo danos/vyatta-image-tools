@@ -1,3 +1,13 @@
+vyatta-image-tools (5.47) unstable; urgency=medium
+
+  [ Nachiketa Prachanda ]
+  * scripts: Remove unnecessary message
+
+  [ Mike Manning ]
+  * Installer should check signed binaries if secure boot if enabled
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Fri, 18 Jun 2021 20:13:44 +0100
+
 vyatta-image-tools (5.46) unstable; urgency=medium
 
   [ Nicholas Brown ]
