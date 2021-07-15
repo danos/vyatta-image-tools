@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2020, AT&T Intellectual Property.
+# Copyright (c) 2020-2021, AT&T Intellectual Property.
 # All rights reserved.
 #
 # SPDX-License-Identifier: GPL-2.0-only
@@ -54,7 +54,26 @@ EOF
 ln -sf "$systemd_dir/boot-grub.mount" "$config_loaded_target_wants"
 }
 
+setup_devicecache_systemd() {
+filename=`systemd-escape -p --suffix=mount "/device-cache"`
+    cat <<EOF > $systemd_dir/$filename
+[Unit]
+Before=local-fs.target
+RequiresMountsFor=/boot
+ConditionKernelCommandLine=vyatta-union
+
+[Mount]
+What=$LIVE_ROOTFS_PATH/device-cache
+Where=/device-cache
+Type=none
+Options=bind
+EOF
+
+ln -sf "$systemd_dir/$filename" "$config_loaded_target_wants"
+}
+
 
 mkdir -p $config_loaded_target_wants
 setup_boot_systemd
 setup_bootgrub_systemd
+setup_devicecache_systemd

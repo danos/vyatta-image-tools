@@ -1092,6 +1092,12 @@ mount_filesystems_for_post_install ()
 	fail_exit 'Failed to bind mount /boot/grub.'
     fi
 
+    # create and bind mount device-cache
+    install -m755 -d "${LIVE_ROOTFS}/device-cache" "${ROOT}/device-cache" || \
+    fail_exit 'Failed to set up mountpoint for /device-cache.'
+    if ! try_mount "-o bind ${LIVE_ROOTFS}/device-cache ${ROOT}/device-cache"; then
+        fail_exit "Failed to bind mount device-cache."
+    fi
 }
 
 umount_filesystems_for_post_install ()
@@ -1109,6 +1115,7 @@ umount_filesystems_for_post_install ()
 
     run_command umount -d "${ROOT}/boot/grub"
     run_command umount -d "${ROOT}/boot"
+    run_command umount -d "${ROOT}/device-cache"
     run_command umount -d "${LIVE_ROOTFS}"
 
     # undo overlay
