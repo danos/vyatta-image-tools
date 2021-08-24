@@ -18,11 +18,12 @@ sub add_image {
     my $in       = do { local $/; <> };
     my $input    = decode_json($in);
     my $location = $input->{'location'};
-    my $username = defined( $input->{'username'} ) ? $input->{'username'} : "";
-    my $password = defined( $input->{'password'} ) ? $input->{'password'} : "";
+
+    $ENV{VY_ADD_IMG_USER} = $input->{'username'};
+    $ENV{VY_ADD_IMG_PASS} = $input->{'password'};
 
     my $output =
-qx(/opt/vyatta/sbin/vyatta-install-image -y $location $username $password 2>/dev/null);
+      qx(/opt/vyatta/sbin/vyatta-install-image -y $location 2>/dev/null);
 
     die $output if $? != 0;
 

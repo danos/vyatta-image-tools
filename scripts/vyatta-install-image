@@ -9,7 +9,7 @@
 
 usage ()
 {
-    echo "usage: $(basename $0) [ --root DEV ] [ --config FILE ] [ URL [ USERNAME PASSWORD ] ]"
+    echo "usage: [VY_ADD_IMG_USER=username VY_ADD_IMG_PASS=password] $(basename $0) [ --root DEV ] [ --config FILE ] [ URL ]"
 }
 
 _clean_up ()
@@ -84,7 +84,7 @@ if grep -q -w cloud-init /proc/cmdline ; then
     fail_exit 'add/install image is not permitted for cloud images'
 fi
 
-if [ $# -eq 2 ] || [ $# -gt 3 ] ; then
+if [ $# -gt 1 ] || [ "${VY_ADD_IMG_USER:+X}" != "${VY_ADD_IMG_PASS:+X}" ]; then
     usage
     exit 1
 fi
@@ -94,8 +94,8 @@ fi
 : ${OPT_ROOT:="$(get_live_rootfs_path)"}
 : ${OPT_YES:=""} # the vyatta autoinstaller
 : ${OPT_URL:=${1}} # url to the image to be added
-: ${OPT_URL_USERNAME:=${2}}
-: ${OPT_URL_PASSWORD:=${3}}
+: ${OPT_URL_USERNAME:=${VY_ADD_IMG_USER}}
+: ${OPT_URL_PASSWORD:=${VY_ADD_IMG_PASS}}
 : ${OPT_VYATTA_CONFIG:=""} # Using a non-default vyatta config.boot
 : ${OPT_DEFER_BOOT:="0"} # If set, don't use the new image as the default boot
 export OPT_DEFER_BOOT
