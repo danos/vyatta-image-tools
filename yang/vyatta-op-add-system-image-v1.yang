@@ -53,7 +53,10 @@ module vyatta-op-add-system-image-v1 {
 		SPDX-License-Identifier: BSD-3-Clause
 
 		Defines the top level 'image' level under 'add system' for operational CLI";
-	
+
+	revision 2021-08-24 {
+		description "Use environment variables to pass credentials";
+	}
 	revision 2021-03-31 {
 		description "Allow user to install images without setting image as the default boot.";
 	}
@@ -88,7 +91,8 @@ module vyatta-op-add-system-image-v1 {
 
 							opd:argument passphrase {
 								opd:help "Password to use with authentication";
-								opd:on-enter 'vyatta-install-image "$4" "$6" "$8"';
+								opd:on-enter 'export VY_ADD_IMG_USER="$6" VY_ADD_IMG_PASS="$8" && \
+									vyatta-install-image "$4"';
 								opd:privileged true;
 								opd:secret true;
 								type string;
@@ -113,7 +117,8 @@ module vyatta-op-add-system-image-v1 {
 
 								opd:argument passphrase {
 									opd:help "Password to use with authentication";
-									opd:on-enter 'vyatta-install-image --defer-boot "$4" "$7" "$9"';
+									opd:on-enter 'export VY_ADD_IMG_USER="$7" VY_ADD_IMG_PASS="$9" && \
+										vyatta-install-image --defer-boot "$4"';
 									opd:privileged true;
 									opd:secret true;
 									type string;

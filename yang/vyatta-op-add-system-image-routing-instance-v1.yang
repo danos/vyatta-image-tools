@@ -57,6 +57,9 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 
 		Defines the 'routing instance' level under 'add system image' for operational CLI";
 
+	revision 2021-08-24 {
+		description "Use environment variables to pass credentials";
+	}
 	revision 2021-03-31 {
 		description "Allow user to install images without setting image as the default boot.";
 	}
@@ -97,7 +100,8 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 
 						opd:option password {
 							opd:help "Password to use with authentication";
-							opd:on-enter 'chvrf "${5}" vyatta-install-image --defer-boot "${6}" "${9}" "${11}"';
+							opd:on-enter 'export VY_ADD_IMG_USER="${9}" VY_ADD_IMG_PASS="${11}" && \
+								chvrf "${5}" vyatta-install-image --defer-boot "${6}"';
 							opd:privileged true;
 							opd:secret true;
 							type string;
@@ -112,7 +116,8 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 
 					opd:option password {
 						opd:help "Password to use with authentication";
-						opd:on-enter 'chvrf "${5}" vyatta-install-image "${6}" "${8}" "${10}"';
+						opd:on-enter 'export VY_ADD_IMG_USER="${8}" VY_ADD_IMG_PASS="${10}" && \
+							chvrf "${5}" vyatta-install-image "${6}"';
 						opd:privileged true;
 						opd:secret true;
 						type string;
@@ -126,7 +131,8 @@ module vyatta-op-add-system-image-routing-instance-v1 {
 
 					opd:option passphrase {
 						opd:help "Password to use with authentication";
-						opd:on-enter 'chvrf "${5}" vyatta-install-image "${6}" "${8}" "${10}"';
+						opd:on-enter 'export VY_ADD_IMG_USER="${8}" VY_ADD_IMG_PASS="${10}" && \
+							chvrf "${5}" vyatta-install-image "${6}"';
 						opd:privileged true;
 						opd:secret true;
 						type string;
