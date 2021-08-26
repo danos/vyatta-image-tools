@@ -1,3 +1,10 @@
+vyatta-image-tools (5.49) unstable; urgency=medium
+
+  * Use environment variables to pass credentials from RPC to script
+  * Use environment variables to pass credentials from Yang to script
+
+ -- Mike Manning <mmanning@vyatta.att-mail.com>  Thu, 26 Aug 2021 08:35:09 +0100
+
 vyatta-image-tools (5.48) unstable; urgency=medium
 
   [ Sharmila Podury ]
