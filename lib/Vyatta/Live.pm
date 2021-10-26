@@ -18,10 +18,14 @@ package Vyatta::Live;
 use strict;
 use warnings;
 
-use File::Temp qw/ :mktemp tempdir /;
+use File::Basename;
 use File::Copy;
+use File::Slurp qw/ edit_file_lines /;
+use File::Sync qw / fsync /;
+use File::Temp qw/ :mktemp tempdir /;
 use Sys::Syslog;
 use Template;
+use Try::Tiny;
 
 our ( @EXPORT, @ISA, $SCRIPT );
 
@@ -29,7 +33,7 @@ BEGIN {
     require Exporter;
     @ISA = qw(Exporter);
     @EXPORT =
-      qw(what_is_mounted_on get_live_image_root get_persistence_label parse_grub_cfg read_grub_config get_images_from_grub_entries list_images get_image_version get_image_storage get_kernel_command_line get_running_image get_default_boot_image delete_image set_default_boot_image is_installed_system print_default_index is_onie_system);
+      qw(what_is_mounted_on get_live_image_root get_persistence_label parse_grub_cfg read_grub_config get_images_from_grub_entries list_images get_image_version get_image_storage get_kernel_command_line get_running_image get_default_boot_image delete_image set_default_boot_image is_installed_system print_default_index is_onie_system flush_grub_cfg);
 
     foreach ( $ENV{vyatta_sbindir}, qw(/opt/vyatta/sbin) ) {
         next if ( !defined($_) );
@@ -425,15 +429,38 @@ sub print_default_index {
     return "$gref->{'default'}";
 }
 
+sub do_fsync {
+    my @files = @_;
+
+    for my $f (@files) {
+        if ( open( my $fd, '<', $f ) ) {
+            fsync($fd);
+            close($fd);
+        } else {
+            syslog( "warning|local3", "Failed to flush $f to disk" );
+        }
+    }
+}
+
+sub flush_grub_cfg {
+    my ($grub_cfg) = @_;
+    my $grub_dir = dirname($grub_cfg);
+    do_fsync( $grub_cfg, $grub_dir );
+}
+
 sub set_default_grub_image {
     my ( $grub_cfg, $def_index ) = @_;
 
     # Set default pointer in grub config file to point to the new
     # default version.
-    system("sed -i 's/^set default=.*\$/set default=$def_index/' $grub_cfg");
-
-    die "Failed to set the default boot image.\n"
-      if ( $? >> 8 );
+    try {
+        my $pat = qr/^set default=.*$/;
+        edit_file_lines( sub { s/$pat/set default=$def_index/ },
+            $grub_cfg, { atomic => 1 } );
+        flush_grub_cfg($grub_cfg);
+    } catch {
+        die "Failed to set the default boot image: $_\n"
+    };
 }
 
 sub get_index_of_matching_image {
@@ -553,6 +580,7 @@ sub delete_grub_entries {
 
     move( $tfile, $grub_cfg )
       or die "Failed to delete GRUB entries\n";
+    flush_grub_cfg($grub_cfg);
 }
 
 sub get_boot_dir {

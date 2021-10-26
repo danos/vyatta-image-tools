@@ -159,6 +159,7 @@ sub build_grub_cmd {
     if ( compare( "$gcfg_new", "$gcfg", sub { ignore_header($_[0], $_[1]); }) ) {
         rename( $gcfg_new, $gcfg )
           or die __FILE__ . ": Could not rename new Grub configuration\n";
+        flush_grub_cfg($gcfg);
     } else {
         unlink( $gcfg_new );
     }

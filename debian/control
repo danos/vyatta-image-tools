@@ -11,7 +11,9 @@ Build-Depends:
  dh-yang,
  gnupg,
  libfile-slurp-perl,
+ libfile-sync-perl,
  libtemplate-perl,
+ libtry-tiny-perl,
  ronn | ruby-ronn,
  sharutils,
  shunit2
