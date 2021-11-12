@@ -3,6 +3,7 @@
 
 # **** License ****
 #
+# Copyright (c) 2021, Ciena Corporation, All Rights Reserved
 # Copyright (c) 2018-2020, AT&T Intellectual Property.
 # All Rights Reserved.
 #
@@ -20,7 +21,17 @@
 
 use strict;
 use warnings;
-use lib "/opt/vyatta/share/perl5";
+
+my $vyatta_lib;
+
+BEGIN {
+    my $vyatta_prefix = '/opt/vyatta';
+    if ( $ENV{vyatta_prefix} ) {
+        $vyatta_prefix = $ENV{vyatta_prefix};
+    }
+    $vyatta_lib = "${vyatta_prefix}/share/perl5";
+}
+use lib $vyatta_lib;
 
 use Vyatta::Configd;
 use Vyatta::Live;
