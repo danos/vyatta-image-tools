@@ -25,11 +25,17 @@ use warnings;
 my $vyatta_lib;
 
 BEGIN {
-    my $vyatta_prefix = '/opt/vyatta';
+    # During installation, In newer versions $ENV{vyatta_prefix} is set to
+    # /mnt/cdsquash/opt/vyatta.
+    # But in older versions this it is set to /mnt/cdsquash.
+
+    $vyatta_lib = "/opt/vyatta/share/perl5";
     if ( $ENV{vyatta_prefix} ) {
-        $vyatta_prefix = $ENV{vyatta_prefix};
+        my $vyatta_prefix = $ENV{vyatta_prefix};
+        if ( -d "$vyatta_prefix/share/perl5" ) {
+            $vyatta_lib = "${vyatta_prefix}/share/perl5";
+        }
     }
-    $vyatta_lib = "${vyatta_prefix}/share/perl5";
 }
 use lib $vyatta_lib;
 
@@ -114,6 +120,17 @@ sub ignore_header {
     return $a ne $b;
 }
 
+sub call_flush_grub_cfg {
+    my $fn = \&Vyatta::Live::flush_grub_cfg;
+    if (defined(&$fn)) {
+	print "Flushing grub configuration file\n";
+        $fn->(@_);
+    } else {
+        print "Could not flush grub configuration file\n";
+    }
+    return;
+}
+
 sub build_grub_cmd {
     my ( $reduced, $index, $grub_users, $gcfg, $gtemplate, $pt_cmd, $dhcp, $cloud_init, @images ) =
       (@_);
@@ -170,7 +187,7 @@ sub build_grub_cmd {
     if ( compare( "$gcfg_new", "$gcfg", sub { ignore_header($_[0], $_[1]); }) ) {
         rename( $gcfg_new, $gcfg )
           or die __FILE__ . ": Could not rename new Grub configuration\n";
-        flush_grub_cfg($gcfg);
+            call_flush_grub_cfg($gcfg);
     } else {
         unlink( $gcfg_new );
     }
